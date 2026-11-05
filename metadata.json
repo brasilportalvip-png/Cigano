@@ -1,0 +1,8 @@
+{
+  "name": "Magia do Tarot: O Reino Encantado das Cartas",
+  "description": "Portal místico para leituras sagradas de Tarot, interpretações do Oráculo com sabedoria ancestral, grimório completo dos 78 arcanos e diário de tiragens.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
