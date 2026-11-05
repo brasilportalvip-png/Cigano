@@ -6,7 +6,7 @@ export const TermsOfService: React.FC = () => (
   <div className="mx-auto max-w-3xl px-4 py-10 text-white">
     <div className="rounded-2xl border border-[#D4AF37]/30 bg-black/85 p-6 md:p-10 backdrop-blur-md">
       <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#D4AF37]">Termos de uso</h1>
-      <p className="mt-1 text-xs text-gray-400">Magia das Crenças — o Reino Encantado das Cartas · vigência a partir de novembro de 2026</p>
+      <p className="mt-1 text-xs text-gray-400">Magia do Tarot — o Reino Encantado das Cartas · vigência a partir de novembro de 2026</p>
       <div className="mt-6 space-y-5 text-sm leading-relaxed text-gray-200">
         <section>
           <h2 className="font-serif font-bold text-[#D4AF37]">1. O que é esta mesa</h2>

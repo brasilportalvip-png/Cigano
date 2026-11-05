@@ -16,7 +16,10 @@ vi.mock('../serverlib/services/geminiService.js', () => ({
 
 import handler from '../api/cigano.js';
 import { BARALHO_MARSELHA, embaralharMarselha, comInterpretacoesDoDono } from '../src/cigano/baralho.js';
-import { montarCruz, tirarCartas, descreverSete, CRUZ_POSICOES, CRUZ_LAYOUT, MAX_PERGUNTAS } from '../src/cigano/metodo.js';
+import { montarAbertura, montarCruz, tirarCartas, descreverSete, CRUZ_POSICOES, CRUZ_LAYOUT, MAX_PERGUNTAS } from '../src/cigano/metodo.js';
+import { cartasDoMonte, textoDaConsulta, textoDoBloco, textoDoMapa, tituloDoBloco } from '../src/cigano/copiar.js';
+import { PERGUNTAS_PRONTAS } from '../src/cigano/perguntas.js';
+import { buildFrocSpeechPrompt } from '../serverlib/services/ciganoSpeech.js';
 import { limparDadosNatais, montarMapaNatal, compararDadosNatais } from '../src/cigano/natal.js';
 import { aberturaDaMesa, promptDoCigano, separarResposta, sanitizarAcoes, saudacaoDoHorario, CIGANO_MARK } from '../src/cigano/persona.js';
 import { detectarIntencao, envolveOutraPessoa, mandouParar } from '../src/cigano/intents.js';
@@ -81,6 +84,15 @@ describe('Método do Cigano', () => {
     expect(txt).toMatch(/CARTA 7 — CORINGA DE CONFIRMAÇÃO/);
   });
 
+  it('abertura: 3 montes de 7 (21 cartas sem repetir), cada um lido 3 + 3 + coringa', () => {
+    const montes = montarAbertura(embaralharMarselha());
+    expect(montes).toHaveLength(3);
+    expect(montes.map((m) => m.posicao)).toEqual([1, 2, 3]);
+    expect(montes.every((m) => m.cartas.length === 7)).toBe(true);
+    expect(new Set(montes.flatMap((m) => m.cartas.map((c) => c.id))).size).toBe(21);
+    expect(cartasDoMonte(montes[0].cartas)).toMatch(/^1ª resposta: 1\. .+\n2ª resposta: 4\. .+\nCoringa: 7\. /);
+  });
+
   it('cruz: 5 montes de 7, sem repetir carta, na posição certa da mesa', () => {
     const montes = montarCruz(embaralharMarselha());
     expect(montes.map((m) => m.nome)).toEqual(['Realidade atual', 'Ameaça dos pés', 'Presente negativo', 'Futuro positivo', 'Ori — cabeça e pensamentos']);
@@ -100,12 +112,21 @@ describe('Mapa natal com todos os oráculos', () => {
     expect(limparDadosNatais({ fullName: 'Ana Lima', birthDate: '1990-02-10', birthTime: '25:00' })).toEqual({ fullName: 'Ana Lima', birthDate: '1990-02-10', birthTime: null });
   });
 
-  it('traz astrologia, numerologia, cabala, odù, búzios — e fala como Cigano', () => {
+  it('retrato natal completo (essência, alma, amor e dinheiro, forças, momento, sorte) — e fala como Cigano', () => {
     const m = montarMapaNatal(limparDadosNatais(PESSOA)!);
     const grupos = new Set(m.itens.map((i) => i.grupo));
-    for (const g of ['Astrologia', 'Numerologia', 'Cabala', 'Odù', 'Búzios']) expect(grupos.has(g as any)).toBe(true);
+    for (const g of ['Essência', 'Alma e caminho', 'Amor e dinheiro', 'Forças espirituais', 'Momento atual', 'Sorte e proteção']) expect(grupos.has(g as any)).toBe(true);
+    expect(m.itens.length).toBeGreaterThanOrEqual(25);
     expect(m.itens.find((i) => i.rotulo === 'Signo solar')?.valor).toBe('Áries');
     expect(m.itens.every((i) => i.valor && i.valor !== '—')).toBe(true);
+    // orixás regentes, sem repetir o mesmo nome com outro acento
+    const orixas = m.itens.find((i) => i.rotulo === 'Orixás que regem')!.valor.split(', ');
+    expect(orixas.length).toBeGreaterThan(1);
+    expect(orixas.filter((o) => /obatal|obàtál/i.test(o))).toHaveLength(1);
+    expect(m.itens.find((i) => i.rotulo === 'Mês pessoal')?.detalhe).toMatch(/^mês de /);
+    expect(m.itens.filter((i) => i.sombra).length).toBeGreaterThan(8);
+    expect(m.resumo).toMatch(/ORIXÁS QUE REGEM/);
+    expect(m.resumo).toMatch(/MOMENTO ATUAL: ano pessoal/);
     expect(m.resumo).toMatch(/NUMEROLOGIA/);
     expect(m.resumo).not.toMatch(/padilha|pombo ?gira|rainha das 7/i);
     expect(JSON.stringify(m.itens)).not.toMatch(/padilha|pombo ?gira/i);
@@ -137,6 +158,12 @@ describe('Persona e comandos', () => {
     expect(p).toMatch(/CORINGA/);
     expect(p).toMatch(/Já foram usadas 2 de 5/);
     expect(p).toMatch(/MONTE 3 DA CRUZ/);
+    expect(p).toMatch(/3 montes de 7 cartas/);
+    expect(p).toMatch(/dinâmico/);
+    expect(p).toMatch(/AGRAVANTES/);
+    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'abertura', posicao: 2 } })).toMatch(/MONTE 2 DE 3 DO JOGO DE ABERTURA/);
+    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'apresentacao' } })).toMatch(/APRESENTAÇÃO — o retrato/);
+    expect(buildFrocSpeechPrompt('Olá.')).toMatch(/Ritmo ágil e dinâmico/);
     expect(p).toMatch(/05 de novembro de 2026/);
     expect(p).toMatch(/pedir_dados_outra_pessoa/);
     expect(saudacaoDoHorario(Date.UTC(2026, 10, 5, 13, 0))).toBe('bom dia');
@@ -182,7 +209,8 @@ describe('/api/cigano (só o dono)', () => {
     const c = aberta.data.consulta;
     expect(c.id).toMatch(/^cg_[a-f0-9]{24}$/);
     expect(c.tiragens[0].tipo).toBe('abertura');
-    expect(c.tiragens[0].cartas).toHaveLength(7);
+    expect(c.tiragens[0].montes).toHaveLength(3);
+    expect(c.tiragens[0].montes.every((m: any) => m.cartas.length === 7)).toBe(true);
     expect(c.mapaResumo).toBeUndefined();
 
     const cruz = await call('cruz', { body: { consultaId: c.id } });
@@ -207,14 +235,23 @@ describe('/api/cigano (só o dono)', () => {
     expect(done.text).toBe('Agradeço a confiança. As cartas mostram caminho aberto.');
     expect(done.actions).toEqual([{ name: 'fazer_cruz' }]);
     const prompt = gem.prompts[0];
-    const primeira = c.tiragens[0].cartas[0].nome;
+    const primeira = c.tiragens[0].montes[2].cartas[6].nome;
     expect(prompt).toContain(primeira);
+    expect(prompt).toMatch(/MONTE 3 DA ABERTURA/);
     expect(prompt).toMatch(/MONTE 5 — ORI/);
     expect(prompt).toMatch(/COMPARAÇÃO DOS DADOS NATAIS/);
     expect(prompt).toMatch(/Já foram usadas 5 de 5/);
 
     const lista = await call('consultas');
     expect(lista.data.consultas.some((x: any) => x.id === c.id)).toBe(true);
+  });
+
+  it('retrato antes de abrir a mesa: o Cigano recebe o mapa natal da pessoa', async () => {
+    const r = await call('chat', { body: { etapa: { tipo: 'apresentacao' }, dados: PESSOA, messages: [{ role: 'user', content: '[RETRATO NATAL]' }] } });
+    expect(r.status).toBe(200);
+    expect(gem.prompts[0]).toMatch(/MAPA NATAL DE MARIA DAS GRAÇAS SOUZA \(ainda sem cartas\)/);
+    expect(gem.prompts[0]).toMatch(/ORIXÁS QUE REGEM/);
+    expect((await call('chat', { body: { etapa: { tipo: 'apresentacao' }, dados: { fullName: '' }, messages: [{ role: 'user', content: 'x' }] } })).status).toBe(400);
   });
 
   it('salva a interpretação do dono e usa nos próximos jogos', async () => {
@@ -229,5 +266,37 @@ describe('/api/cigano (só o dono)', () => {
   it('recusa dados natais inválidos e consulta de outro dono', async () => {
     expect((await call('abrir', { body: { dados: { fullName: '', birthDate: 'x' } } })).status).toBe(400);
     expect((await call('cruz', { body: { consultaId: 'cg_000000000000000000000000' } })).status).toBe(404);
+  });
+});
+
+describe('Copiar para mandar à pessoa', () => {
+  const dados = { fullName: 'Maria das Graças Souza', birthDate: '1979-03-21', birthTime: '06:15' };
+  it('bloco com marca, nome, data, título, cartas e assinatura', () => {
+    const montes = montarAbertura(embaralharMarselha());
+    const tiragens: any = [{ id: 't1', tipo: 'abertura', criadaEm: '', montes }];
+    const b = tituloDoBloco({ tipo: 'abertura', posicao: 2 }, tiragens);
+    expect(b.titulo).toBe('Jogo de abertura — segundo monte');
+    const txt = textoDoBloco({ dados, ...b, fala: 'As cartas mostram caminho aberto.' });
+    expect(txt).toMatch(/^🔮 MAGIA DO TAROT — o Reino Encantado das Cartas\nConsulta de Maria das Graças Souza · nascimento 21\/03\/1979 às 06:15/);
+    expect(txt).toContain('✦ JOGO DE ABERTURA — SEGUNDO MONTE');
+    expect(txt).toContain(montes[1].cartas[0].nome);
+    expect(txt).toContain('As cartas mostram caminho aberto.');
+    expect(txt).toMatch(/— Cigano · Magia do Tarot/);
+    expect(txt).not.toMatch(/crenças|padilha/i);
+  });
+  it('retrato natal e consulta inteira', () => {
+    const m = montarMapaNatal(limparDadosNatais(dados)!);
+    const mapa = textoDoMapa(dados, m.itens);
+    expect(mapa).toMatch(/Retrato natal de Maria/);
+    expect(mapa).toMatch(/✦ FORÇAS ESPIRITUAIS/);
+    expect(mapa).toMatch(/Cuidado: /);
+    const tudo = textoDaConsulta(dados, [{ titulo: 'Seu retrato natal — quem você é', fala: 'A' }, { titulo: 'Pergunta 1: “X?”', cartas: '1ª resposta: 1. O Sol', fala: 'B' }]);
+    expect(tudo).toMatch(/✦ SEU RETRATO NATAL[\s\S]+— — —[\s\S]+✦ PERGUNTA 1/);
+  });
+  it('perguntas prontas do nicho', () => {
+    expect(PERGUNTAS_PRONTAS.length).toBeGreaterThanOrEqual(12);
+    expect(PERGUNTAS_PRONTAS.map((p) => p.texto)).toContain('Corro algum risco, perigo ou demanda?');
+    expect(PERGUNTAS_PRONTAS.some((p) => /orixá/.test(p.texto))).toBe(true);
+    expect(envolveOutraPessoa('Como está minha vida amorosa?')).toBe(false);
   });
 });

@@ -44,7 +44,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Cigano — Magia das Crenças] Running on port ${PORT} (0.0.0.0)`);
+    console.log(`[Cigano — Magia do Tarot] Running on port ${PORT} (0.0.0.0)`);
   });
 }
 

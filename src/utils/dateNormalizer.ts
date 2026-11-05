@@ -1,5 +1,5 @@
 /**
- * Canonical Date Normalizer - Cigano — Magia das Crenças
+ * Canonical Date Normalizer - Cigano — Magia do Tarot
  * 
  * Regra: Aceita estritamente YYYY-MM-DD e DD/MM/AAAA.
  * Rejeita datas fictícias ou impossíveis (ex: 31/02).

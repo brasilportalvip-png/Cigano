@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, X, Mic, MicOff, Send, Volume2, VolumeX, Plus, Trash2, MessageSquare, LogOut, BookOpen, History, Sparkles, Loader2 } from 'lucide-react';
+import { Menu, X, Mic, MicOff, Send, Volume2, VolumeX, Plus, Trash2, MessageSquare, LogOut, BookOpen, History, Sparkles, Loader2, Download } from 'lucide-react';
 import { useApp } from '../contexts/AppContext.js';
 import { cigano, ciganoChat, CiganoApiError, getToken, type ConsultaPublica, type DadosNatais, type ChatTurn, type ItemMapa } from '../cigano/client/api.js';
-import { speakFrocBrowser, speakFrocNeural, type SpeakHandle } from '../cigano/client/speaker.js';
+import { prepararFala, speakFrocBrowser, speakFrocNeural, type FalaPronta, type SpeakHandle } from '../cigano/client/speaker.js';
 import { startFrocListener, mergeFinal, type FrocListener } from '../cigano/client/listener.js';
 import { takeSentences } from '../cigano/client/text.js';
 import { listChats, saveChat, deleteChat, newChatId, formatChatDate, type SavedChat } from '../cigano/client/history.js';
 import { aberturaDaMesa, agoraBrasilia, chamadoDoNome, saudacaoDoHorario, type CiganoAcao, type CiganoEmocao, type EtapaCigano } from '../cigano/persona.js';
-import { CRUZ_POSICOES, MAX_PERGUNTAS, type CartaCigano, type Tiragem } from '../cigano/metodo.js';
+import { ABERTURA_MONTES, CRUZ_POSICOES, MAX_PERGUNTAS, type CartaCigano, type Tiragem } from '../cigano/metodo.js';
 import { detectarIntencao, envolveOutraPessoa, mandouParar, normalizar, pareceEco } from '../cigano/intents.js';
-import { DetalheCarta, MapaNatalPainel, MesaTiragem } from '../components/cigano/Mesa.js';
+import { BotaoCopiar, DetalheCarta, MapaNatalPainel, MesaTiragem } from '../components/cigano/Mesa.js';
+import { textoDaConsulta, textoDoBloco, tituloDoBloco } from '../cigano/copiar.js';
+import { PERGUNTAS_PRONTAS } from '../cigano/perguntas.js';
+import { useInstalarApp } from '../cigano/client/instalar.js';
 
 type Fase = 'idle' | 'listening' | 'thinking' | 'speaking';
 
@@ -23,11 +26,21 @@ interface Msg {
   tiragemId?: string;
   animar?: boolean;
   ritual?: boolean;
+  /** Que parte da consulta este bloco do Cigano interpretou (para o título ao copiar). */
+  etapa?: EtapaCigano;
+}
+
+interface ItemFala { text: string; pronta?: FalaPronta }
+/** Junta frases curtas num pedaço só: menos pausas entre uma frase e outra. */
+const JUNTAR_ATE = 320;
+const VOZ_KEY = 'cigano_voz';
+function vozSalva(): boolean {
+  try { return localStorage.getItem(VOZ_KEY) !== 'off'; } catch { return true; }
 }
 
 let seq = 0;
 const mid = () => `m${Date.now().toString(36)}${(seq++).toString(36)}`;
-const FASE_LABEL: Record<Fase, string> = { idle: 'à disposição', listening: 'ouvindo', thinking: 'consultando…', speaking: 'falando' };
+const FASE_LABEL: Record<Fase, string> = { idle: 'à disposição', listening: 'ouvindo', thinking: 'consultando as cartas…', speaking: 'falando' };
 const DEBOUNCE_MS = 900;
 
 function Avatar({ fase, level, size, onClick }: { fase: Fase; level: number; size: number; onClick?: () => void }) {
@@ -89,7 +102,9 @@ export function Cigano() {
   const [partial, setPartial] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
-  const [voz, setVoz] = useState(true);
+  const [voz, setVoz] = useState(vozSalva);
+  const [ajudaInstalar, setAjudaInstalar] = useState(false);
+  const app = useInstalarApp();
   const [relogio, setRelogio] = useState(() => agoraBrasilia(Date.now()));
   const [formNatal, setFormNatal] = useState(false);
   const [outraPara, setOutraPara] = useState<string | null>(null);
@@ -103,11 +118,11 @@ export function Cigano() {
   const busyRef = useRef(false);
   const genRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
-  const filaRef = useRef<string[]>([]);
+  const filaRef = useRef<ItemFala[]>([]);
   const falandoRef = useRef<SpeakHandle | null>(null);
   const loopRef = useRef<Promise<void> | null>(null);
   const falhasVozRef = useRef(0);
-  const vozRef = useRef(true);
+  const vozRef = useRef(vozSalva());
   const textoFalandoRef = useRef('');
   const recentesRef = useRef<{ t: string; at: number }[]>([]);
   const listenerRef = useRef<FrocListener | null>(null);
@@ -119,7 +134,7 @@ export function Cigano() {
 
   useEffect(() => { consultaRef.current = consulta; }, [consulta]);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
-  useEffect(() => { vozRef.current = voz; }, [voz]);
+  useEffect(() => { vozRef.current = voz; try { localStorage.setItem(VOZ_KEY, voz ? 'on' : 'off'); } catch { /* sem armazenamento */ } }, [voz]);
   useEffect(() => { const t = window.setInterval(() => setRelogio(agoraBrasilia(Date.now())), 1000); return () => window.clearInterval(t); }, []);
   useEffect(() => { listaRef.current?.scrollTo({ top: listaRef.current.scrollHeight, behavior: 'smooth' }); }, [messages, partial, formNatal, outraPara]);
   useEffect(() => { setChats(listChats(uid)); }, [uid]);
@@ -134,6 +149,7 @@ export function Cigano() {
 
   // ---------------- Voz ----------------
   const pararFala = useCallback(() => {
+    filaRef.current.forEach((f) => f.pronta?.abort());
     filaRef.current = [];
     falandoRef.current?.stop();
     falandoRef.current = null;
@@ -151,11 +167,15 @@ export function Cigano() {
     if (loopRef.current) return;
     loopRef.current = (async () => {
       while (filaRef.current.length) {
-        const t = filaRef.current.shift()!;
+        const item = filaRef.current.shift()!;
+        const t = item.text;
         setFase('speaking');
         let h: SpeakHandle;
         if (falhasVozRef.current < 2) {
-          h = speakFrocNeural(getToken, t, setLevel);
+          // Já pede o áudio do próximo pedaço enquanto este toca: sem silêncio no meio.
+          const prox = filaRef.current[0];
+          if (prox && !prox.pronta) prox.pronta = prepararFala(getToken, prox.text);
+          h = speakFrocNeural(getToken, t, setLevel, item.pronta);
           falandoRef.current = h;
           try { await h.done; falhasVozRef.current = 0; continue; } catch {
             if (falandoRef.current !== h) break;
@@ -177,7 +197,10 @@ export function Cigano() {
     if (!vozRef.current || !frase.trim()) return;
     recentesRef.current = [...recentesRef.current, { t: frase, at: Date.now() }].slice(-12);
     textoFalandoRef.current = `${textoFalandoRef.current} ${frase}`.slice(-800);
-    filaRef.current.push(frase);
+    const fila = filaRef.current;
+    const ultimo = fila[fila.length - 1];
+    if (ultimo && !ultimo.pronta && ultimo.text.length + frase.length < JUNTAR_ATE) ultimo.text = `${ultimo.text} ${frase}`;
+    else fila.push({ text: frase });
     rodarFala();
   }, [rodarFala]);
 
@@ -187,7 +210,7 @@ export function Cigano() {
   };
 
   // ---------------- Conversa com a IA ----------------
-  const enviar = useCallback(async (texto: string, o: { hidden?: boolean; etapa?: EtapaCigano } = {}) => {
+  const enviar = useCallback(async (texto: string, o: { hidden?: boolean; etapa?: EtapaCigano; dados?: DadosNatais | null } = {}) => {
     const limpo = texto.trim();
     if (!limpo) return;
     const gen = genRef.current;
@@ -198,7 +221,7 @@ export function Cigano() {
     abortRef.current = abort;
     setErro(null);
     const u: Msg = { id: mid(), role: 'user', text: limpo, hidden: o.hidden };
-    const r: Msg = { id: mid(), role: 'assistant', text: '', streaming: true };
+    const r: Msg = { id: mid(), role: 'assistant', text: '', streaming: true, etapa: o.etapa };
     const historico: ChatTurn[] = [...messagesRef.current, u]
       .filter((m) => m.text && !m.streaming && !m.ritual)
       .map((m) => ({ role: m.role, content: m.text.slice(0, 11000) }))
@@ -209,7 +232,7 @@ export function Cigano() {
     let buf = '';
     let acoes: CiganoAcao[] = [];
     try {
-      await ciganoChat({ messages: historico, consultaId: consultaRef.current?.id || null, etapa: o.etapa || { tipo: 'conversa' } }, {
+      await ciganoChat({ messages: historico, consultaId: consultaRef.current?.id || null, etapa: o.etapa || { tipo: 'conversa' }, dados: o.dados || null }, {
         onDelta: (piece) => {
           if (gen !== genRef.current) return;
           setMessages((p) => p.map((m) => (m.id === r.id ? { ...m, text: m.text + piece } : m)));
@@ -260,9 +283,11 @@ export function Cigano() {
       if (gen !== genRef.current) return;
       const t = c.tiragens.find((x) => x.tipo === 'abertura')!;
       setMessages((p) => [...p, { id: mid(), role: 'assistant', text: '', tiragemId: t.id, animar: true }]);
-      await new Promise((r) => setTimeout(r, 7 * 650 + 400));
-      if (gen !== genRef.current) return;
-      await enviar('[MESA ABERTA] Interprete agora o jogo de abertura.', { hidden: true, etapa: { tipo: 'abertura' } });
+      await new Promise((r) => setTimeout(r, 21 * 220 + 300));
+      for (const m of ABERTURA_MONTES) {
+        if (gen !== genRef.current) return;
+        await enviar(`[ABERTURA] Interprete o ${m.nome.toLowerCase()} (monte ${m.n} de 3).`, { hidden: true, etapa: { tipo: 'abertura', posicao: m.n } });
+      }
     } catch (e: any) {
       setErro(e?.message || 'Não foi possível abrir a mesa.');
     } finally {
@@ -287,11 +312,11 @@ export function Cigano() {
       await esperarFala(gen);
       if (gen !== genRef.current) return;
       setMessages((p) => [...p, { id: mid(), role: 'assistant', text: '', tiragemId: t.id, animar: true }]);
-      await new Promise((r) => setTimeout(r, 35 * 160 + 400));
+      await new Promise((r) => setTimeout(r, 35 * 140 + 300));
+      // O próximo monte já é interpretado enquanto o Cigano fala o anterior (sem espera parada).
       for (const pos of CRUZ_POSICOES) {
         if (gen !== genRef.current) return;
         await enviar(`[CRUZ] Interprete o monte ${pos.n} — ${pos.nome}.`, { hidden: true, etapa: { tipo: 'monte', posicao: pos.n } });
-        await esperarFala(gen);
       }
       if (gen !== genRef.current) return;
       await enviar('[CRUZ] Faça a síntese da cruz.', { hidden: true, etapa: { tipo: 'sintese_cruz' } });
@@ -317,12 +342,9 @@ export function Cigano() {
       const { consulta: c, tiragemId, indice } = await cigano.pergunta(atual.id, pergunta, outra || null);
       setConsulta(c);
       consultaRef.current = c;
-      const chamado = chamadoDoNome(c.dados.fullName).slice(0, 1);
-      chamado.forEach(falar);
-      await esperarFala(gen);
-      if (gen !== genRef.current) return;
+      chamadoDoNome(c.dados.fullName).slice(0, 1).forEach(falar);
       setMessages((p) => [...p, { id: mid(), role: 'assistant', text: '', tiragemId, animar: true }]);
-      await new Promise((r) => setTimeout(r, 7 * 650 + 400));
+      await new Promise((r) => setTimeout(r, 7 * 450 + 300));
       if (gen !== genRef.current) return;
       await enviar(`[PERGUNTA ${indice}] ${pergunta}`, { hidden: true, etapa: { tipo: 'pergunta', indice } });
     } catch (e: any) {
@@ -479,7 +501,10 @@ export function Cigano() {
   const preverMapa = async (dados: DadosNatais) => {
     setCarregando(true);
     setErro(null);
-    try { setPreMapa(await cigano.natal(dados)); } catch (e: any) { setErro(e?.message || 'Dados inválidos.'); } finally { setCarregando(false); }
+    let ok = false;
+    try { setPreMapa(await cigano.natal(dados)); ok = true; } catch (e: any) { setErro(e?.message || 'Dados inválidos.'); } finally { setCarregando(false); }
+    // O retrato: o Cigano mostra que conhece a pessoa antes de abrir a mesa.
+    if (ok) void enviar(`[RETRATO NATAL] Apresente ${dados.fullName}.`, { hidden: true, etapa: { tipo: 'apresentacao' }, dados });
   };
 
   const tiragemPorId = (id?: string): Tiragem | undefined => consulta?.tiragens.find((t) => t.id === id);
@@ -488,6 +513,15 @@ export function Cigano() {
   const temAbertura = !!consulta?.tiragens.some((t) => t.tipo === 'abertura');
   const temCruz = !!consulta?.tiragens.some((t) => t.tipo === 'cruz');
   const saud = saudacaoDoHorario(Date.now());
+  const dadosAtuais = consulta?.dados || preMapa?.dados || null;
+  const blocoParaCopiar = (m: Msg) => ({ ...tituloDoBloco(m.etapa, consulta?.tiragens || []), fala: m.text });
+  const copiarBloco = (m: Msg) => textoDoBloco({ dados: dadosAtuais, ...blocoParaCopiar(m) });
+  const blocosDaConsulta = () => messages.filter((m) => m.role === 'assistant' && m.text && !m.ritual && !m.streaming && m.etapa && m.etapa.tipo !== 'conversa').map(blocoParaCopiar);
+  const alternarVoz = () => { setVoz((v) => { if (v) pararFala(); return !v; }); };
+  const instalarApp = async () => {
+    const r = await app.instalar();
+    if (r === 'manual') setAjudaInstalar(true);
+  };
 
   if (dono === false) {
     return (
@@ -513,14 +547,20 @@ export function Cigano() {
       <header className="relative flex items-center gap-3 px-3 sm:px-5 py-3 border-b border-[#d4a937]/20">
         <button type="button" onClick={() => { setMenu(true); void carregarConsultas(); setChats(listChats(uid)); }} aria-label="Abrir menu" data-testid="cigano-menu-button" className="w-10 h-10 rounded-xl border border-[#d4a937]/50 text-[#f5d67a] flex items-center justify-center cursor-pointer"><Menu className="w-5 h-5" /></button>
         <div className="flex-1 min-w-0 flex items-center gap-2">
-          <img src="/image/cigano-avatar.webp" alt="" className="w-9 h-9 rounded-full border border-[#d4a937]/60 object-cover" />
+          <img src="/image/cigano-avatar.webp" alt="" className="hidden min-[420px]:block w-9 h-9 rounded-full border border-[#d4a937]/60 object-cover" />
           <div className="min-w-0">
-            <h1 className="font-black tracking-widest text-xs sm:text-sm truncate bg-gradient-to-r from-[#f5d67a] via-[#d4a937] to-[#fff3c4] bg-clip-text text-transparent">MAGIA DAS CRENÇAS</h1>
+            <h1 className="font-black tracking-widest text-xs sm:text-sm truncate bg-gradient-to-r from-[#f5d67a] via-[#d4a937] to-[#fff3c4] bg-clip-text text-transparent">MAGIA DO TAROT</h1>
             <p className="text-[10px] text-slate-400 truncate">o Reino Encantado das Cartas</p>
           </div>
         </div>
         <span className="hidden sm:block text-[11px] text-slate-400 font-mono" data-testid="cigano-relogio">{relogio}</span>
-        <button type="button" onClick={() => { setVoz((v) => !v); if (voz) pararFala(); }} aria-label={voz ? 'Desligar voz' : 'Ligar voz'} className="w-10 h-10 rounded-xl border border-white/15 flex items-center justify-center cursor-pointer">{voz ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}</button>
+        {!app.instalado && (
+          <button type="button" onClick={() => void instalarApp()} data-testid="cigano-instalar" aria-label="Baixar o aplicativo" className="h-10 px-3 rounded-xl border border-[#d4a937]/50 text-[#f5d67a] flex items-center gap-1.5 text-xs font-bold cursor-pointer"><Download className="w-4 h-4" /><span className="hidden sm:inline">Baixar app</span></button>
+        )}
+        <button type="button" onClick={alternarVoz} data-testid="cigano-audio" aria-pressed={voz} aria-label={voz ? 'Desligar o áudio do Cigano' : 'Ligar o áudio do Cigano'}
+          className={`h-10 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-bold cursor-pointer ${voz ? 'border-emerald-500/60 text-emerald-300 bg-emerald-500/10' : 'border-pink-500/60 text-pink-300 bg-pink-500/10'}`}>
+          {voz ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}<span>{voz ? 'Áudio ligado' : 'Áudio desligado'}</span>
+        </button>
       </header>
 
       <main className="relative flex-1 min-h-0 w-full max-w-4xl mx-auto flex flex-col">
@@ -533,7 +573,7 @@ export function Cigano() {
               <Avatar fase={fase} level={level} size={150} onClick={avatarClick} />
               <div>
                 <p className="text-2xl sm:text-3xl font-black">{saud.replace(/^./, (x) => x.toUpperCase())}{nomeDono ? `, ${nomeDono}` : ''}. <span className="text-[#f5d67a]">A mesa está pronta.</span></p>
-                <p className="text-sm text-slate-400 mt-2">Tarot de Marselha · 78 cartas · todos os oráculos ativos.</p>
+                <p className="text-sm text-slate-400 mt-2">Tarot de Marselha · 78 cartas · retrato natal completo · todos os oráculos.</p>
                 <p className="sm:hidden text-[11px] text-slate-500 font-mono mt-2">{relogio}</p>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
@@ -551,6 +591,12 @@ export function Cigano() {
                 <div className={`max-w-[92%] sm:max-w-[82%] rounded-2xl px-4 py-2.5 ${m.role === 'user' ? 'bg-pink-500/10 border border-pink-500/35' : m.ritual ? 'bg-[#2a0d0f]/70 border border-[#b8272d]/50 italic' : 'bg-[#d4a937]/[0.07] border border-[#d4a937]/30'}`}>
                   <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-slate-100" data-testid={m.role === 'assistant' ? (m.ritual ? 'cigano-ritual' : 'cigano-resposta') : 'dono-msg'}>{m.text}{m.streaming && <span className="inline-block w-2 h-4 bg-[#d4a937] ml-1 animate-pulse align-middle" />}</p>
                   {!m.text && m.streaming && <Loader2 className="w-4 h-4 animate-spin text-[#d4a937]" />}
+                  {m.role === 'assistant' && !m.ritual && !m.streaming && m.text && (
+                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#d4a937]/15 pt-2">
+                      <span className="text-[10px] uppercase tracking-wider text-[#d4a937]/80 font-bold truncate">{tituloDoBloco(m.etapa, consulta?.tiragens || []).titulo}</span>
+                      <BotaoCopiar texto={() => copiarBloco(m)} testId="copiar-bloco" />
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -582,6 +628,19 @@ export function Cigano() {
               {temAbertura && !temCruz && <button type="button" onClick={() => void fazerCruz()} data-testid="cigano-fazer-cruz" className="px-4 py-2 rounded-full bg-[#d4a937] text-black text-sm font-bold cursor-pointer">Fazer a cruz</button>}
               {temCruz && <span className="px-3 py-2 rounded-full border border-emerald-500/40 text-emerald-300 text-xs">Perguntas: {consulta.perguntasUsadas}/{MAX_PERGUNTAS}</span>}
               <button type="button" onClick={novaConsulta} className="px-4 py-2 rounded-full border border-white/20 text-slate-300 text-sm cursor-pointer">Nova consulta</button>
+              {blocosDaConsulta().length > 0 && <BotaoCopiar rotulo="Copiar consulta inteira" testId="copiar-consulta" texto={() => textoDaConsulta(consulta.dados, blocosDaConsulta())} />}
+            </div>
+          )}
+
+          {consulta && temCruz && modoPergunta && consulta.perguntasUsadas < MAX_PERGUNTAS && !carregando && fase !== 'thinking' && !outraPara && (
+            <div className="rounded-2xl border border-[#d4a937]/30 bg-black/40 p-3" data-testid="perguntas-prontas">
+              <p className="text-[11px] font-black uppercase tracking-widest text-[#f5d67a] mb-2">O que a pessoa quer saber — toque para tirar as cartas</p>
+              <div className="flex flex-wrap gap-2">
+                {PERGUNTAS_PRONTAS.map((q) => (
+                  <button key={q.texto} type="button" data-testid="pergunta-pronta" onClick={() => (q.outra ? setOutraPara(q.texto) : void tirarPergunta(q.texto, null))}
+                    className="px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.04] text-[13px] text-slate-100 hover:border-[#d4a937] hover:text-[#f5d67a] cursor-pointer text-left">{q.texto}</button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -613,6 +672,28 @@ export function Cigano() {
 
       {carta && <DetalheCarta carta={carta} onClose={() => setCarta(null)} />}
 
+      {ajudaInstalar && (
+        <div className="fixed inset-0 z-[95] bg-black/80 flex items-end sm:items-center justify-center p-4" onClick={() => setAjudaInstalar(false)} role="dialog" aria-modal="true" data-testid="ajuda-instalar">
+          <div className="max-w-sm w-full rounded-2xl border border-[#d4a937]/50 bg-[#0b0607] p-5 space-y-3 text-sm text-slate-200" onClick={(e) => e.stopPropagation()}>
+            <p className="font-black text-[#f5d67a] text-base">Baixar o Magia do Tarot</p>
+            {app.ios ? (
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Abra este site no <b>Safari</b>.</li>
+                <li>Toque em <b>Compartilhar</b> (o quadrado com a seta para cima).</li>
+                <li>Toque em <b>Adicionar à Tela de Início</b> e depois em <b>Adicionar</b>.</li>
+              </ol>
+            ) : (
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>No <b>Chrome</b> ou no <b>Edge</b>, toque no menu <b>⋮</b> do navegador.</li>
+                <li>Toque em <b>Instalar aplicativo</b> (ou <b>Adicionar à tela inicial</b>).</li>
+                <li>Confirme: o ícone do Cigano aparece junto dos seus aplicativos.</li>
+              </ol>
+            )}
+            <button type="button" onClick={() => setAjudaInstalar(false)} className="w-full h-10 rounded-xl bg-[#d4a937] text-black font-black cursor-pointer">Entendi</button>
+          </div>
+        </div>
+      )}
+
       {/* Menu ☰ */}
       <div className={`fixed inset-0 z-[80] ${menu ? '' : 'pointer-events-none invisible'}`} aria-hidden={!menu}>
         <div className={`absolute inset-0 bg-black/70 transition-opacity ${menu ? 'opacity-100' : 'opacity-0'}`} onClick={() => setMenu(false)} />
@@ -630,6 +711,8 @@ export function Cigano() {
                   <button className={item} onClick={go(novaConsulta)} data-testid="menu-nova-consulta"><Sparkles className="w-4 h-4 text-[#d4a937]" /> Nova consulta</button>
                   <button className={item} onClick={go(novaConversa)} data-testid="menu-nova-conversa"><Plus className="w-4 h-4 text-emerald-400" /> Nova conversa</button>
                   <button className={item} onClick={go(() => navigate('/interpretacoes'))} data-testid="menu-interpretacoes"><BookOpen className="w-4 h-4 text-pink-400" /> Minhas interpretações das cartas</button>
+                  <button className={item} onClick={go(alternarVoz)} data-testid="menu-audio">{voz ? <VolumeX className="w-4 h-4 text-pink-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />} {voz ? 'Desligar o áudio' : 'Ligar o áudio'}</button>
+                  {!app.instalado && <button className={item} onClick={go(() => void instalarApp())} data-testid="menu-instalar"><Download className="w-4 h-4 text-[#d4a937]" /> Baixar como aplicativo</button>}
                 </nav>
                 <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-slate-500 flex items-center gap-1"><History className="w-3 h-3" /> Consultas salvas</p>
                 <ul className="pb-2" data-testid="menu-consultas">

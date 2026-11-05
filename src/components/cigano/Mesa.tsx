@@ -2,6 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { CartaVisual } from './CartaVisual.js';
 import { CRUZ_LAYOUT, GRUPOS_DE_SETE, type CartaCigano, type Tiragem } from '../../cigano/metodo.js';
 import type { ItemMapa } from '../../cigano/client/api.js';
+import { copiarTexto, primeiroNome, textoDoMapa } from '../../cigano/copiar.js';
+
+/** Botão "Copiar" (texto já personalizado para mandar à pessoa). */
+export function BotaoCopiar({ texto, rotulo = 'Copiar', testId }: { texto: () => string; rotulo?: string; testId?: string }) {
+  const [ok, setOk] = useState<null | boolean>(null);
+  return (
+    <button type="button" data-testid={testId || 'copiar'} aria-label={rotulo}
+      onClick={async (e) => { e.stopPropagation(); const r = await copiarTexto(texto()); setOk(r); window.setTimeout(() => setOk(null), 1800); }}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors ${ok ? 'border-emerald-400 text-emerald-300' : ok === false ? 'border-pink-400 text-pink-300' : 'border-[#d4a937]/50 text-[#f5d67a] hover:bg-[#d4a937]/10'}`}>
+      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+      {ok ? 'Copiado!' : ok === false ? 'Não copiou' : rotulo}
+    </button>
+  );
+}
 
 /** Revela as cartas uma a uma (como na mesa). */
 function useRevelar(total: number, ativo: boolean, intervalo = 650): number {
@@ -18,15 +32,15 @@ function useRevelar(total: number, ativo: boolean, intervalo = 650): number {
 
 function Sete({ cartas, reveladas, tamanho = 'md', onCarta }: { cartas: CartaCigano[]; reveladas: number; tamanho?: 'sm' | 'md'; onCarta?: (c: CartaCigano) => void }) {
   return (
-    <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+    <div className="flex flex-nowrap items-end gap-1.5 sm:gap-4">
       {GRUPOS_DE_SETE.map((g, gi) => (
         <div key={gi} className="flex flex-col items-center gap-1.5">
-          <div className="flex gap-1.5 sm:gap-2">
+          <div className="flex gap-0.5 sm:gap-2">
             {g.cartas.map((i) => (
               <CartaVisual key={i} carta={cartas[i]} revelada={i < reveladas} tamanho={tamanho} ordem={i + 1} coringa={i === 6} onClick={() => i < reveladas && onCarta?.(cartas[i])} />
             ))}
           </div>
-          <span className={`text-[10px] uppercase tracking-wider font-bold ${gi === 2 ? 'text-pink-400' : 'text-[#d4a937]'}`}>{gi === 0 ? '1ª resposta' : gi === 1 ? '2ª resposta' : 'coringa'}</span>
+          <span className={`text-[9px] sm:text-[10px] uppercase tracking-wider font-bold ${gi === 2 ? 'text-pink-400' : 'text-[#d4a937]'}`}>{gi === 0 ? '1ª resposta' : gi === 1 ? '2ª resposta' : 'coringa'}</span>
         </div>
       ))}
     </div>
@@ -34,8 +48,27 @@ function Sete({ cartas, reveladas, tamanho = 'md', onCarta }: { cartas: CartaCig
 }
 
 export function MesaTiragem({ tiragem, animar, onCarta, indicePergunta }: { tiragem: Tiragem; animar: boolean; onCarta?: (c: CartaCigano) => void; indicePergunta?: number }) {
-  const total = tiragem.tipo === 'cruz' ? 35 : 7;
-  const reveladas = useRevelar(total, animar, tiragem.tipo === 'cruz' ? 160 : 650);
+  const total = tiragem.montes ? tiragem.montes.length * 7 : 7;
+  const reveladas = useRevelar(total, animar, tiragem.tipo === 'cruz' ? 140 : tiragem.montes ? 220 : 450);
+
+  if (tiragem.tipo === 'abertura' && tiragem.montes) {
+    return (
+      <div className="rounded-2xl border border-[#d4a937]/40 bg-black/50 p-3 sm:p-4" data-testid="mesa-abertura">
+        <p className="text-xs font-black uppercase tracking-widest text-[#f5d67a] mb-3">Jogo de abertura — 3 montes de 7 cartas</p>
+        <div className="space-y-3">
+          {tiragem.montes.map((m, mi) => {
+            const base = mi * 7;
+            return (
+              <div key={m.posicao} className="rounded-xl border border-[#d4a937]/25 bg-[#120607]/70 p-2 sm:p-3" data-testid={`abertura-monte-${m.posicao}`}>
+                <p className="text-[10px] font-black uppercase tracking-wider text-[#f5d67a] mb-2">{m.posicao}º monte</p>
+                <Sete cartas={m.cartas} reveladas={Math.max(0, reveladas - base)} onCarta={onCarta} tamanho="sm" />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   if (tiragem.tipo === 'cruz' && tiragem.montes) {
     return (
@@ -72,33 +105,63 @@ export function MesaTiragem({ tiragem, animar, onCarta, indicePergunta }: { tira
   );
 }
 
-const GRUPO_COR: Record<string, string> = {
-  Astrologia: 'text-[#f5d67a]', Numerologia: 'text-emerald-300', Cabala: 'text-sky-300', 'Odù': 'text-pink-300', 'Búzios': 'text-amber-300',
+const GRUPO_ESTILO: Record<string, { cor: string; icone: string }> = {
+  'Essência': { cor: 'text-[#f5d67a]', icone: '☀' },
+  'Alma e caminho': { cor: 'text-emerald-300', icone: '✦' },
+  'Amor e dinheiro': { cor: 'text-pink-300', icone: '♥' },
+  'Forças espirituais': { cor: 'text-sky-300', icone: '☽' },
+  'Momento atual': { cor: 'text-amber-300', icone: '⌛' },
+  'Sorte e proteção': { cor: 'text-violet-300', icone: '✧' },
 };
 
-/** Painel do mapa natal (fica em cima, como na mesa do Cigano). */
+/** Retrato natal (fica em cima, como na mesa do Cigano): grande, completo e por assunto. */
 export function MapaNatalPainel({ nome, nascimento, hora, itens }: { nome: string; nascimento: string; hora?: string | null; itens: ItemMapa[] }) {
   const [aberto, setAberto] = useState(true);
   const [y, m, d] = nascimento.split('-');
+  const grupos: string[] = [];
+  for (const it of itens) if (!grupos.includes(it.grupo)) grupos.push(it.grupo);
+  const destaque = (r: string) => itens.find((i) => i.rotulo === r)?.valor || '—';
   return (
-    <section className="rounded-2xl border border-[#d4a937]/50 bg-gradient-to-b from-[#1a0b0c] to-black p-3 sm:p-4" data-testid="mapa-natal">
-      <button type="button" onClick={() => setAberto((v) => !v)} className="w-full flex items-center justify-between gap-2 text-left cursor-pointer">
-        <span>
-          <span className="block text-[10px] uppercase tracking-[0.25em] font-black text-[#d4a937]">Dados natais</span>
-          <span className="block text-base sm:text-lg font-bold text-white">{nome}</span>
-          <span className="block text-xs text-slate-400">{d}/{m}/{y}{hora ? ` · ${hora}` : ' · hora não informada'}</span>
-        </span>
-        <span className="text-xs text-slate-400">{aberto ? 'recolher' : 'ver mapa'}</span>
-      </button>
+    <section className="rounded-2xl border border-[#d4a937]/50 bg-gradient-to-b from-[#1a0b0c]/95 to-black/90 p-3 sm:p-5" data-testid="mapa-natal">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <button type="button" onClick={() => setAberto((v) => !v)} className="min-w-0 flex-1 text-left cursor-pointer">
+          <span className="block text-[10px] uppercase tracking-[0.25em] font-black text-[#d4a937]">Retrato natal</span>
+          <span className="block text-xl sm:text-2xl font-black text-white leading-tight">{nome}</span>
+          <span className="block text-xs text-slate-400 mt-0.5">{d}/{m}/{y}{hora ? ` · ${hora}` : ' · hora não informada'} · {aberto ? 'tocar para recolher' : 'tocar para ver tudo'}</span>
+        </button>
+        <BotaoCopiar testId="copiar-mapa" rotulo="Copiar retrato" texto={() => textoDoMapa({ fullName: nome, birthDate: nascimento, birthTime: hora }, itens)} />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+        {[['Signo', 'Signo solar'], ['Caminho de vida', 'Caminho de vida'], ['Odù', 'Odù de nascimento'], ['Ano pessoal', 'Ano pessoal']].map(([t, r]) => (
+          <div key={t} className="rounded-xl border border-[#d4a937]/35 bg-[#d4a937]/[0.06] px-3 py-2 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-[#d4a937] font-bold">{t}</p>
+            <p className="text-lg font-black text-white leading-tight">{destaque(r)}</p>
+          </div>
+        ))}
+      </div>
       {aberto && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
-          {itens.map((it) => (
-            <div key={`${it.grupo}-${it.rotulo}`} className="rounded-xl border border-white/10 bg-white/[0.03] p-2" title={it.detalhe || ''}>
-              <p className={`text-[9px] uppercase tracking-wider font-bold ${GRUPO_COR[it.grupo] || 'text-slate-300'}`}>{it.grupo} · {it.rotulo}</p>
-              <p className="text-sm font-semibold text-white leading-tight mt-0.5">{it.valor}</p>
-              {it.detalhe && <p className="text-[11px] text-slate-400 leading-snug mt-0.5 line-clamp-2">{it.detalhe}</p>}
-            </div>
-          ))}
+        <div className="mt-4 space-y-4">
+          {grupos.map((g) => {
+            const est = GRUPO_ESTILO[g] || { cor: 'text-slate-300', icone: '•' };
+            return (
+              <div key={g} data-testid={`mapa-grupo-${g}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${est.cor}`}><span aria-hidden="true">{est.icone}</span> {g}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {itens.filter((i) => i.grupo === g).map((it) => (
+                    <div key={`${it.grupo}-${it.rotulo}`} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                      <p className="flex items-baseline justify-between gap-2">
+                        <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400">{it.rotulo}</span>
+                        <span className="text-sm font-black text-white text-right">{it.valor}</span>
+                      </p>
+                      {it.detalhe && <p className="text-[13px] text-slate-200 leading-snug mt-1">{it.detalhe}</p>}
+                      {it.sombra && <p className="text-[12px] text-pink-200/90 leading-snug mt-1"><b className="text-pink-300">Cuidado:</b> {it.sombra}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          <p className="text-[11px] text-slate-500">Mapa de {primeiroNome(nome)}: astrologia, numerologia, cabala, odù e búzios — tudo ligado às cartas.</p>
         </div>
       )}
     </section>

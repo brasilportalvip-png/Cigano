@@ -1,5 +1,5 @@
 {
-  "name": "Magia das Crenças — o Reino Encantado das Cartas",
+  "name": "Magia do Tarot — o Reino Encantado das Cartas",
   "description": "Mesa pessoal do Cigano: Tarot de Marselha, cruz de 5 montes, dados natais e voz do Cigano.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": [

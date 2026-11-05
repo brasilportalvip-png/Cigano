@@ -5,7 +5,7 @@
 import type { TokenGetter } from './api';
 
 const DEFAULT_RATE = 24_000;
-const LEAD_SECONDS = 0.25;
+const LEAD_SECONDS = 0.12;
 /** Junta pedaços pequenos (0,2 s) antes de tocar: voz contínua mesmo com o celular ocupado. */
 const MIN_CHUNK_SAMPLES = 4800;
 
@@ -29,12 +29,34 @@ export interface SpeakHandle {
 /** Nível de voz (0..1) enquanto fala — anima a boca/olhos do avatar. */
 export type LevelListener = (level: number) => void;
 
+/** Pede o áudio da próxima frase enquanto a atual ainda toca (sem silêncio entre as frases). */
+export interface FalaPronta { response: Promise<Response>; abort: () => void }
+
+export function prepararFala(getToken: TokenGetter, text: string): FalaPronta {
+  const controller = new AbortController();
+  const response = (async () => {
+    const token = await getToken();
+    if (!token) throw new Error('auth');
+    return fetch('/api/cigano?op=fala', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ text }),
+    });
+  })();
+  response.catch(() => undefined);
+  return { response, abort: () => controller.abort() };
+}
+
 export function speakFrocNeural(
   getToken: TokenGetter,
   text: string,
   onLevel?: LevelListener,
+  pronta?: FalaPronta,
 ): SpeakHandle {
   const controller = new AbortController();
+  const fala = pronta || prepararFala(getToken, text);
+  controller.signal.addEventListener('abort', () => fala.abort());
   let ctx: AudioContext | null = null;
   const sources = new Set<AudioBufferSourceNode>();
   let stopped = false;
@@ -56,14 +78,8 @@ export function speakFrocNeural(
     ctx = new AC({ sampleRate: DEFAULT_RATE, latencyHint: 'playback' });
     void ctx.resume().catch(() => undefined);
     const firstAudio = window.setTimeout(() => { if (!gotAudio) controller.abort(); }, 15_000);
-    const token = await getToken();
-    if (!token) throw new Error('auth');
-    const res = await fetch('/api/cigano?op=fala', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ text }),
-    });
+    const res = await fala.response;
+    if (controller.signal.aborted) throw new Error('aborted');
     if (!res.ok || !res.body) throw new Error(`tts_http_${res.status}`);
     const rate = Number(res.headers.get('X-Froc-Audio-Sample-Rate')) || DEFAULT_RATE;
     const reader = res.body.getReader();
@@ -84,7 +100,7 @@ export function speakFrocNeural(
       src.buffer = buf;
       src.connect(ctx.destination);
       // Se faltou áudio (internet lenta), dá um respiro em vez de picotar.
-      if (!next || next < ctx.currentTime + 0.02) next = ctx.currentTime + (next ? 0.12 : LEAD_SECONDS);
+      if (!next || next < ctx.currentTime + 0.02) next = ctx.currentTime + (next ? 0.06 : LEAD_SECONDS);
       let peak = 0;
       for (let i = 0; i < samples.length; i += 64) peak = Math.max(peak, Math.abs(samples[i]));
       const startAt = next;
@@ -135,7 +151,7 @@ export function speakFrocBrowser(text: string, onLevel?: LevelListener): SpeakHa
   if (!synth) return { done: Promise.resolve(), stop: () => undefined };
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'pt-BR';
-  u.rate = 1.08;
+  u.rate = 1.18;
   u.pitch = 0.82;
   const voices = synth.getVoices().filter((v) => v.lang?.toLowerCase().startsWith('pt'));
   u.voice = voices.find((v) => /daniel|ricardo|male|mascul|antonio|felipe/i.test(v.name)) || voices[0] || null;

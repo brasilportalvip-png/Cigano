@@ -203,7 +203,7 @@ function calcularNumeroOculto(nome: string): number {
   return reduzirNumero(total);
 }
 
-function interpretarNumero(numero: number): InterpretacaoNumero {
+export function interpretarNumero(numero: number): InterpretacaoNumero {
   const tabela: Record<number, InterpretacaoNumero> = {
     1: {
       numero: 1,

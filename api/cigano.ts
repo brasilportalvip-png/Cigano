@@ -6,13 +6,13 @@ import { checkRateLimit } from '../serverlib/services/rateLimiter.js';
 import { getGeminiClient, MODEL_CHAIN } from '../serverlib/services/geminiService.js';
 import { cleanSpeechText, createLiveTranscriptionToken, FROC_SPEECH_SAMPLE_RATE, synthesizeFrocSpeechStream } from '../serverlib/services/ciganoSpeech.js';
 import { BARALHO_MARSELHA, comInterpretacoesDoDono, embaralharMarselha } from '../src/cigano/baralho.js';
-import { CARTAS_POR_JOGO, MAX_PERGUNTAS, montarCruz, tirarCartas, type CartaCigano, type Tiragem } from '../src/cigano/metodo.js';
+import { CARTAS_POR_JOGO, MAX_PERGUNTAS, montarAbertura, montarCruz, tirarCartas, type CartaCigano, type Tiragem } from '../src/cigano/metodo.js';
 import { compararDadosNatais, limparDadosNatais, montarMapaNatal } from '../src/cigano/natal.js';
 import { consultaParaTexto, perguntasUsadas, type ConsultaCigano } from '../src/cigano/consulta.js';
 import { prefixoSeguro, promptDoCigano, separarResposta, type EtapaCigano } from '../src/cigano/persona.js';
 
 /**
- * Magia das Crenças — o Reino Encantado das Cartas: tudo do Cigano numa função só.
+ * Magia do Tarot — o Reino Encantado das Cartas: tudo do Cigano numa função só.
  * Uso exclusivo do dono (admin do Firebase ou e-mail em CIGANO_DONO_EMAILS).
  *   GET  ?op=estado | ?op=consultas | ?op=consulta&id= | ?op=cartas
  *   POST ?op=natal | ?op=abrir | ?op=cruz | ?op=pergunta | ?op=chat (SSE) | ?op=fala | ?op=escuta | ?op=cartas
@@ -89,7 +89,11 @@ function sse(res: Response) {
 
 function etapaValida(raw: any): EtapaCigano {
   const t = String(raw?.tipo || '');
-  if (t === 'abertura' || t === 'sintese_cruz') return { tipo: t };
+  if (t === 'sintese_cruz' || t === 'apresentacao') return { tipo: t };
+  if (t === 'abertura') {
+    const posicao = Math.round(Number(raw?.posicao));
+    return posicao >= 1 && posicao <= 3 ? { tipo: 'abertura', posicao } : { tipo: 'abertura' };
+  }
   if (t === 'monte') {
     const posicao = Math.round(Number(raw?.posicao));
     if (posicao >= 1 && posicao <= 5) return { tipo: 'monte', posicao };
@@ -110,18 +114,24 @@ async function chat(req: AuthenticatedRequest, res: Response) {
   const consultaId = String(req.body?.consultaId || '');
   const consulta = consultaId ? await carregarConsulta(uid, consultaId) : null;
   if (consultaId && !consulta) return res.status(404).json({ error: 'Consulta não encontrada.' });
+  // Apresentação antes de abrir a mesa: o retrato só com os dados natais.
+  const dadosSoltos = !consulta && etapa.tipo === 'apresentacao' ? limparDadosNatais(req.body?.dados) : null;
+  if (etapa.tipo === 'apresentacao' && !consulta && !dadosSoltos) return res.status(400).json({ error: 'Confira os dados natais.' });
+  const textoConsulta = consulta
+    ? consultaParaTexto(consulta)
+    : dadosSoltos ? `MAPA NATAL DE ${dadosSoltos.fullName.toUpperCase()} (ainda sem cartas)\n${montarMapaNatal(dadosSoltos).resumo}` : null;
   const ai: any = getGeminiClient();
   if (!ai) return res.status(503).json({ error: 'O Cigano está sem conexão com a inteligência agora.' });
 
   const systemInstruction = promptDoCigano({
     nowMs: Date.now(),
     nomeDono: String(req.user?.fullName || '').split(' ')[0] || null,
-    consulta: consulta ? consultaParaTexto(consulta) : null,
+    consulta: textoConsulta,
     perguntasUsadas: consulta ? perguntasUsadas(consulta) : 0,
     etapa,
   });
   const contents = msgs.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content) }] }));
-  const maxOutputTokens = etapa.tipo === 'conversa' ? 1200 : 3500;
+  const maxOutputTokens = etapa.tipo === 'conversa' ? 1200 : 2500;
 
   const send = sse(res);
   let buffer = '';
@@ -233,7 +243,7 @@ export default async function handler(req: AuthenticatedRequest, res: Response) 
           dados,
           mapaResumo: mapa.resumo,
           mapaItens: mapa.itens,
-          tiragens: [novaTiragem('abertura', { cartas: tirarCartas(await baralhoDoDono(), CARTAS_POR_JOGO) })],
+          tiragens: [novaTiragem('abertura', { montes: montarAbertura(await baralhoDoDono()) })],
         };
         await salvarConsulta(c);
         return res.status(201).json({ consulta: publica(c) });

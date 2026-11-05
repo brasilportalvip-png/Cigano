@@ -29,7 +29,9 @@ export function consultaParaTexto(c: ConsultaCigano): string {
   const partes: string[] = [`MAPA NATAL DE ${c.dados.fullName.toUpperCase()}\n${c.mapaResumo}`];
   let p = 0;
   for (const t of c.tiragens) {
-    if (t.tipo === 'abertura' && t.cartas) {
+    if (t.tipo === 'abertura' && t.montes) {
+      partes.push(`JOGO DE ABERTURA — 3 MONTES DE 7 (baralho de 78 embaralhado)\n${t.montes.map((m) => `MONTE ${m.posicao} DA ABERTURA — ${m.nome.toUpperCase()}\n${descreverSete(m.cartas)}`).join('\n\n')}`);
+    } else if (t.tipo === 'abertura' && t.cartas) {
       partes.push(`JOGO DE ABERTURA (baralho de 78 embaralhado)\n${descreverSete(t.cartas)}`);
     } else if (t.tipo === 'cruz' && t.montes) {
       partes.push(`JOGO DA CRUZ (embaralhado de novo)\n${t.montes.map((m) => `MONTE ${m.posicao} — ${m.nome.toUpperCase()}\n${descreverSete(m.cartas)}`).join('\n\n')}`);

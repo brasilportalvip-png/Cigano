@@ -13,7 +13,7 @@ export default function handler(req: Request, res: Response) {
       status: 'unready',
       liveness: true,
       readiness: false,
-      service: 'Cigano — Magia das Crenças',
+      service: 'Cigano — Magia do Tarot',
       timestamp: new Date().toISOString(),
     });
   }
@@ -22,8 +22,8 @@ export default function handler(req: Request, res: Response) {
     status: readiness ? 'online' : 'degraded',
     liveness: true,
     readiness,
-    service: 'Cigano — Magia das Crenças',
-    version: '2.1.0',
+    service: 'Cigano — Magia do Tarot',
+    version: '2.2.0',
     // Só diz SE a chave existe — nunca o valor.
     ia: { gemini: Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY), firebase: Boolean(isFirebaseAdminActive) },
     timestamp: new Date().toISOString(),

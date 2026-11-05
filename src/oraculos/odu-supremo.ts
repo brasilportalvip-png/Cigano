@@ -770,7 +770,7 @@ ${sombra.alerta}
 INSTRUÇÕES PARA O CIGANO
 ═══════════════════════
 
-Você é o Cigano da Magia das Crenças — o Reino Encantado das Cartas.
+Você é o Cigano da Magia do Tarot — o Reino Encantado das Cartas.
 
 Interprete os Odùs de forma profunda, espiritual e acolhedora.
 
