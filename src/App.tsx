@@ -1,112 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { Header } from './components/Header';
-import { SpreadBoard } from './components/SpreadBoard';
-import { GrimoireEncyclopedia } from './components/GrimoireEncyclopedia';
-import { JournalView } from './components/JournalView';
-import { LunarPhaseView } from './components/LunarPhaseView';
-import { SavedReading } from './types/tarot';
-import { getCurrentMoonPhase } from './utils/lunar';
-import { Sparkles } from 'lucide-react';
+import React, { Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
+import { AppProvider, useApp } from './contexts/AppContext.js';
+import { BackgroundEffects } from './components/BackgroundEffects.js';
+import { ErrorBoundary } from './components/ErrorBoundary.js';
+import { Auth } from './pages/Auth.js';
+import { PrivacyPolicy } from './pages/PrivacyPolicy.js';
+import { TermsOfService } from './pages/TermsOfService.js';
+import { Cigano } from './pages/Cigano.js';
+import { Interpretacoes } from './pages/Interpretacoes.js';
 
-const STORAGE_KEY = 'magia_tarot_readings_v1';
+/**
+ * Magia das Crenças — o Reino Encantado das Cartas.
+ * Ferramenta exclusiva do Cigano: tela inicial = mesa e conversa com o Cigano (estilo ChatGPT).
+ */
+const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, authReady } = useApp();
+  if (!authReady) return <div className="min-h-screen bg-black flex items-center justify-center text-[#D4AF37] text-sm">Preparando a mesa…</div>;
+  return user ? <>{children}</> : <Navigate to="/auth?tab=login" replace />;
+};
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState<'tiragens' | 'grimorio' | 'diario' | 'lunar'>('tiragens');
-  const [savedReadings, setSavedReadings] = useState<SavedReading[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch {
-      // Ignore
-    }
-    return [];
-  });
-
-  const lunar = getCurrentMoonPhase();
-
-  // Save to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedReadings));
-    } catch {
-      // Ignore
-    }
-  }, [savedReadings]);
-
-  const handleSaveReading = (reading: SavedReading) => {
-    setSavedReadings((prev) => [reading, ...prev]);
-  };
-
-  const handleDeleteReading = (id: string) => {
-    setSavedReadings((prev) => prev.filter((r) => r.id !== id));
-  };
-
-  const handleUpdateNotes = (id: string, notes: string) => {
-    setSavedReadings((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, notes } : r))
-    );
-  };
+function AppContent() {
+  const location = useLocation();
+  const telaDoCigano = location.pathname === '/' || location.pathname === '/interpretacoes';
 
   return (
-    <div className="min-h-screen bg-[#050714] text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Top Bar Navigation */}
-      <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        savedCount={savedReadings.length}
-        currentMoonEmoji={lunar.emoji}
-      />
-
-      {/* Main Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-        {activeTab === 'tiragens' && (
-          <SpreadBoard
-            onSaveReading={handleSaveReading}
-            onOpenJournal={() => setActiveTab('diario')}
-          />
-        )}
-
-        {activeTab === 'grimorio' && <GrimoireEncyclopedia />}
-
-        {activeTab === 'diario' && (
-          <JournalView
-            readings={savedReadings}
-            onDeleteReading={handleDeleteReading}
-            onUpdateNotes={handleUpdateNotes}
-            onStartNewReading={() => setActiveTab('tiragens')}
-          />
-        )}
-
-        {activeTab === 'lunar' && (
-          <LunarPhaseView
-            onSelectSpread={(_spreadId) => {
-              setActiveTab('tiragens');
-            }}
-          />
-        )}
+    <div className="relative min-h-screen font-sans antialiased text-white selection:bg-red-800 selection:text-white flex flex-col overflow-x-hidden">
+      {!telaDoCigano && <BackgroundEffects />}
+      {!telaDoCigano && (
+        <header className="relative z-20 flex items-center gap-3 px-4 py-3 border-b border-[#D4AF37]/20 bg-black/70">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/image/magia-das-crencas.webp" alt="" className="w-9 h-9 rounded-md" />
+            <span className="font-serif text-sm text-[#D4AF37] font-bold">Magia das Crenças — o Reino Encantado das Cartas</span>
+          </Link>
+        </header>
+      )}
+      <main className="relative z-10 w-full flex-1">
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/" element={<PrivateRoute><Cigano /></PrivateRoute>} />
+            <Route path="/interpretacoes" element={<PrivateRoute><Interpretacoes /></PrivateRoute>} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/privacidade" element={<PrivacyPolicy />} />
+            <Route path="/termos" element={<TermsOfService />} />
+            <Route path="/chat" element={<Navigate to="/" replace />} />
+            <Route path="/login" element={<Navigate to="/auth?tab=login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
-
-      {/* Quiet Elegant Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/70 text-slate-500 text-xs py-8 px-4 mt-12">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500/80" />
-            <span className="font-cinzel text-slate-300 font-semibold tracking-wider">
-              Magia do Tarot: O Reino Encantado das Cartas
-            </span>
-          </div>
-
-          <p className="font-serif italic text-slate-400 text-[11px]">
-            "O Tarot é o espelho sagrado da alma; nele, o destino é tecido pelas escolhas do coração."
-          </p>
-
-          <div className="text-[11px] text-slate-500">
-            Tradição Hermética & Sabedoria dos Arcanos
-          </div>
-        </div>
-      </footer>
+      {!telaDoCigano && (
+        <footer className="relative z-20 border-t border-red-950/60 bg-black/90 py-4 px-4 text-center text-xs text-gray-400 flex justify-center gap-6">
+          <Link to="/termos" className="hover:text-[#D4AF37]">Termos de uso</Link>
+          <Link to="/privacidade" className="hover:text-[#D4AF37]">Política de privacidade</Link>
+        </footer>
+      )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
