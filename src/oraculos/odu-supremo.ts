@@ -699,7 +699,7 @@ export function buildOduSupremo(input: OduInput) {
   const sombra = selecionarOduSombra(nome, nascimento, pergunta);
 
   
-const resumoParaMariaPadilha = `
+const resumoParaCigano = `
 ODÙ PREMIUM SUPREMO
 
 Tema detectado: ${tema}
@@ -767,10 +767,10 @@ Alerta:
 ${sombra.alerta}
 
 ═══════════════════════
-INSTRUÇÕES PARA MARIA PADILHA
+INSTRUÇÕES PARA O CIGANO
 ═══════════════════════
 
-Você é Maria Padilha Rainha das 7 Encruzilhadas.
+Você é o Cigano da Magia das Crenças — o Reino Encantado das Cartas.
 
 Interprete os Odùs de forma profunda, espiritual e acolhedora.
 
@@ -808,7 +808,7 @@ Não invente novos Odùs.
       sombra
     },
 
-    resumoParaMariaPadilha
+    resumoParaCigano
   };
 }
 

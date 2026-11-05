@@ -126,7 +126,7 @@ export function calculateAstrology(birthDateStr: string, birthTimeStr?: string |
     ? `hora planetária natal de ${planetaryHourRuler}`
     : 'hora planetária não calculada (hora de nascimento não informada)';
 
-  const cosmicAdvice = `Nascido(a) sob a força do Sol em ${sunSign} (Elemento ${element}, Modo ${modality}), com vibração natal da ${lunarPhase} e ${hourText}. Para que seus caminhos fluam com a força de Maria Padilha, use a energia do seu elemento ${element} com sabedoria e honre os ritmos da Lua em suas decisões.`;
+  const cosmicAdvice = `Nascido(a) sob a força do Sol em ${sunSign} (Elemento ${element}, Modo ${modality}), com vibração natal da ${lunarPhase} e ${hourText}. Para que seus caminhos fluam com a força da mesa cigana, use a energia do seu elemento ${element} com sabedoria e honre os ritmos da Lua em suas decisões.`;
 
   return {
     methodVersion: 'Astrologia-Horaria-Calc-v1',

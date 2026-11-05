@@ -523,7 +523,7 @@ export function buildNumerologiaSuprema(input: NumerologiaInput) {
     forcaEspiritual: interpretarNumero(forcaEspiritual)
   };
 
-  const resumoParaMariaPadilha = `
+  const resumoParaCigano = `
 NUMEROLOGIA PREMIUM SUPREMA
 
 Caminho de Vida: ${caminhoVida}
@@ -564,7 +564,7 @@ Dia favorável: ${diaFavoravel(forcaEspiritual)}
 Número favorável: ${forcaEspiritual}
 Elemento espiritual: ${elementoEspiritual(forcaEspiritual)}
 
-ORIENTAÇÃO PARA A VOZ DE MARIA PADILHA:
+ORIENTAÇÃO PARA A VOZ DO CIGANO:
 Use estes cálculos como verdade interna da leitura.
 Não fale como relatório técnico.
 Não diga que calculou.
@@ -627,7 +627,7 @@ Aponte luz, sombra, destino, auto sabotagem, força, caminho e direção.
 
     interpretacoes,
 
-    resumoParaMariaPadilha
+    resumoParaCigano
   };
 }
 

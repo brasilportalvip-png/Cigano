@@ -157,34 +157,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     password: string;
     timezone?: string;
   }): Promise<UserProfile> => {
-    setIsAuthenticating(true);
-    try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || 'Falha ao realizar cadastro.');
-      }
-
-      const newUser: UserProfile = result.user;
-
-      // Automatically sign in with client SDK to establish authentic Firebase session
-      try {
-        await signInWithEmailAndPassword(auth, data.email.trim(), data.password);
-      } catch (authErr) {
-        console.warn('[AppContext] Client auto-login after register failed:', authErr);
-      }
-
-      setUser(newUser);
-      await loadUserData(newUser.uid);
-      return newUser;
-    } finally {
-      setIsAuthenticating(false);
-    }
+    void data;
+    // O Cigano é ferramenta pessoal do dono: não existe cadastro público.
+    throw new Error('O cadastro está fechado. Só o dono entra na mesa do Cigano.');
   };
 
   const login = async (email: string, password: string): Promise<UserProfile> => {

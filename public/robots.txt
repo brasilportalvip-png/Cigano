@@ -11,4 +11,4 @@ Disallow: /diary
 Disallow: /dashboard
 Disallow: /account
 
-Sitemap: https://maria-padilha-rainha-das-7-encruzil.vercel.app/sitemap.xml
+Sitemap: https://cigano-three.vercel.app/sitemap.xml

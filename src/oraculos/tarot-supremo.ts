@@ -1660,7 +1660,7 @@ export function buildTarotSupremo(input: TarotInput) {
   const conselho = cartaPorIndice(base, 13);
   const energiaOculta = cartaPorIndice(base, 16);
 
-  const resumoParaMariaPadilha = `
+  const resumoParaCigano = `
 TAROT PREMIUM SUPREMO
 
 Tema detectado: ${tema}
@@ -1783,10 +1783,10 @@ Sombra:
 ${energiaOculta.sombra}
 
 ═══════════════════════
-INSTRUÇÕES PARA MARIA PADILHA
+INSTRUÇÕES PARA O CIGANO
 ═══════════════════════
 
-Você é Maria Padilha Rainha das 7 Encruzilhadas.
+Você é o Cigano da Magia das Crenças — o Reino Encantado das Cartas.
 
 Interprete as cartas de forma espiritual, popular, firme e acolhedora.
 
@@ -1826,7 +1826,7 @@ Fale como entidade espiritual.
       energiaOculta
     },
 
-    resumoParaMariaPadilha
+    resumoParaCigano
   };
 }
 

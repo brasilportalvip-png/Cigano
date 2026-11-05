@@ -158,7 +158,7 @@ export function buildCabalaSuprema(input: CabalaInput) {
   const sephirah = selecionarSephirah(nome, nascimento, pergunta);
   const correcaoEspiritual = selecionarCorrecao(sephirah, tema);
 
-  const resumoParaMariaPadilha = `
+  const resumoParaCigano = `
 CABALA PREMIUM SUPREMA
 
 Tema detectado: ${tema}
@@ -176,7 +176,7 @@ Missão: ${sephirah.missao}
 Correção espiritual:
 ${correcaoEspiritual}
 
-ORIENTAÇÃO PARA A VOZ DE MARIA PADILHA:
+ORIENTAÇÃO PARA A VOZ DO CIGANO:
 Use a Cabala como bastidor espiritual.
 Não fale como relatório técnico.
 Não diga que calculou.
@@ -201,7 +201,7 @@ Fale com firmeza, clareza, espiritualidade e linguagem popular.
       correcaoEspiritual
     },
 
-    resumoParaMariaPadilha
+    resumoParaCigano
   };
 }
 

@@ -29,7 +29,7 @@ function AppContent() {
       {!telaDoCigano && (
         <header className="relative z-20 flex items-center gap-3 px-4 py-3 border-b border-[#D4AF37]/20 bg-black/70">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/image/magia-das-crencas.webp" alt="" className="w-9 h-9 rounded-md" />
+            <img src="/image/cigano-avatar.webp" alt="" className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/60" />
             <span className="font-serif text-sm text-[#D4AF37] font-bold">Magia das Crenças — o Reino Encantado das Cartas</span>
           </Link>
         </header>

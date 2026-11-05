@@ -409,6 +409,6 @@ COMO USAR NA RESPOSTA:
 - Não diga que é sistema.
 - Não prometa volta.
 - Não afirme sentimento de terceiro como certeza fechada.
-- Maria Padilha deve falar com firmeza, domínio e responsabilidade.
+- O Cigano deve falar com seriedade, firmeza e responsabilidade.
 `;
 }

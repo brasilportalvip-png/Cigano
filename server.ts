@@ -3,18 +3,8 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 
-// Canonical API Handlers (Single Source of Truth)
-import chatHandler from './api/chat.js';
-import readingHandler from './api/reading.js';
-import registerHandler from './api/register.js';
-import createPaymentHandler from './api/create-payment.js';
-import specialPaymentHandler from './api/special-payment.js';
-import specialOrderHandler from './api/special-order.js';
-import mercadopagoWebhookHandler from './api/mercadopago-webhook.js';
-import adminHandler from './api/admin.js';
-import accountHandler from './api/account.js';
+// Rotas da API (as mesmas funções que a Vercel publica)
 import healthHandler from './api/health.js';
-import loveCompatibilityHandler from './api/love-compatibility.js';
 import ciganoHandler from './api/cigano.js';
 
 dotenv.config();
@@ -34,17 +24,7 @@ app.use('/api', (req, res, next) => {
 // Health Check
 app.all('/api/health', (req, res) => healthHandler(req as any, res as any));
 
-// Private & Core API Routes
-app.all('/api/chat', (req, res) => chatHandler(req as any, res as any));
-app.all('/api/reading', (req, res) => readingHandler(req as any, res as any));
-app.all('/api/register', (req, res) => registerHandler(req as any, res as any));
-app.all('/api/create-payment', (req, res) => createPaymentHandler(req as any, res as any));
-app.all('/api/special-payment', (req, res) => specialPaymentHandler(req as any, res as any));
-app.all('/api/special-order', (req, res) => specialOrderHandler(req as any, res as any));
-app.all('/api/mercadopago-webhook', (req, res) => mercadopagoWebhookHandler(req as any, res as any));
-app.all('/api/admin', (req, res) => adminHandler(req as any, res as any));
-app.all('/api/account', (req, res) => accountHandler(req as any, res as any));
-app.all('/api/love-compatibility', (req, res) => loveCompatibilityHandler(req as any, res as any));
+// Cigano (exclusivo do dono)
 app.all('/api/cigano', (req, res) => ciganoHandler(req as any, res as any));
 
 // Vite Middleware & SPA Static Serving
@@ -64,7 +44,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Reino Portal Server] Running on port ${PORT} (0.0.0.0)`);
+    console.log(`[Cigano — Magia das Crenças] Running on port ${PORT} (0.0.0.0)`);
   });
 }
 

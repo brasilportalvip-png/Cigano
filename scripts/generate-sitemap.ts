@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const BASE_URL = 'https://maria-padilha-rainha-das-7-encruzil.vercel.app';
+const BASE_URL = 'https://cigano-three.vercel.app';
 
 interface SitemapEntry {
   loc: string;

@@ -1,5 +1,5 @@
 /**
- * Mapa natal do Cigano: todos os oráculos do Maria Padilha calculados a partir de
+ * Mapa natal do Cigano: todos os oráculos calculados a partir de
  * nome completo, data e (se souber) hora de nascimento. Só do servidor.
  */
 import { buildConsultaSuprema, gerarComparacaoAmorosaSuprema } from '../oraculos/index.js';
@@ -16,7 +16,7 @@ export interface DadosNatais {
 }
 
 export interface ItemMapa {
-  grupo: 'Astrologia' | 'Numerologia' | 'Cabala' | 'Odù' | 'Búzios' | 'Guardiã';
+  grupo: 'Astrologia' | 'Numerologia' | 'Cabala' | 'Odù' | 'Búzios';
   rotulo: string;
   valor: string;
   detalhe?: string;
@@ -47,21 +47,19 @@ export function limparDadosNatais(raw: any): DadosNatais | null {
 
 const INSTRUCAO_RE = /^\s*(ORIENTAÇÃO|ORIENTACAO|DIRETRIZ|DIRETRIZES|INSTRUÇÕES|INSTRUCOES|COMO USAR|REGRAS PARA|VOZ DE|TOM DE VOZ)\b/i;
 
-/** Deixa só os DADOS de cada oráculo: corta as instruções de voz escritas para a Maria Padilha. */
+/** Deixa só os DADOS de cada oráculo: corta as instruções de voz que vêm junto com os oráculos. */
 export function soOsDados(resumo: string): string {
   const linhas = String(resumo || '').split('\n');
   const corte = linhas.findIndex((l) => INSTRUCAO_RE.test(l));
   return (corte >= 0 ? linhas.slice(0, corte) : linhas).join('\n').trim();
 }
 
-/** Tira qualquer menção à Maria Padilha como voz da consulta (o Cigano é quem fala). */
+/** O Cigano é quem fala: tira qualquer linha que diga à IA para falar como outra entidade. */
 export function vozDoCigano(texto: string): string {
   return String(texto || '')
     .split('\n')
-    .filter((l) => !/(Você é Maria Padilha|Maria Padilha (deve|continua|pode|nunca|fala))/i.test(l))
-    .join('\n')
-    .replace(/(a força de |de )?Maria Padilha( Rainha das 7 Encruzilhadas)?/gi, 'a espiritualidade')
-    .replace(/resumoParaMariaPadilha/g, 'resumo');
+    .filter((l) => !/^\s*Você é (?!o Cigano)/i.test(l))
+    .join('\n');
 }
 
 const n = (v: any) => (v == null || v === '' ? '—' : String(v));
@@ -75,7 +73,6 @@ export function montarMapaNatal(dados: DadosNatais): MapaNatal {
   const it = num.interpretacoes || {};
   const odu = c.odu?.odu?.principal || {};
   const buz = c.buzios?.buzios?.principal || {};
-  const gua = c.guardia?.guardia || {};
   const seph = c.cabala?.cabala?.sephirah || {};
 
   const itens: ItemMapa[] = [
@@ -92,14 +89,13 @@ export function montarMapaNatal(dados: DadosNatais): MapaNatal {
     { grupo: 'Cabala', rotulo: 'Sephirah', valor: n(pick(seph, 'nome') ? `${seph.nome} (${seph.traducao})` : cab.sephirahName), detalhe: pick(seph, 'missao', 'luz') },
     { grupo: 'Odù', rotulo: 'Odù de nascimento', valor: n(pick(odu, 'nome')), detalhe: pick(odu, 'significado') },
     { grupo: 'Búzios', rotulo: 'Queda de nascimento', valor: n(pick(buz, 'nome') ? `${buz.queda ? `${buz.queda} — ` : ''}${buz.nome}` : ''), detalhe: pick(buz, 'significado') },
-    { grupo: 'Guardiã', rotulo: 'Pombagira guardiã', valor: n(pick(gua, 'nome')), detalhe: pick(gua, 'campo', 'conselho') },
   ];
 
   const resumo = vozDoCigano([
     `DADOS NATAIS: ${dados.fullName} · nascimento ${dados.birthDate}${dados.birthTime ? ` às ${dados.birthTime}` : ' (hora não informada)'}`,
     `ASTROLOGIA: signo ${astro.sunSign}, elemento ${astro.element}, modalidade ${astro.modality}, Lua natal ${astro.lunarPhase} (${astro.lunarPhaseDescription})${astro.hourKnown ? `, regente da hora ${astro.planetaryHourRuler}` : ''}. Conselho cósmico: ${astro.cosmicAdvice}`,
     `CABALA (anjo e sephirah por data): anjo guardião ${cab.guardianAngel?.name} (${cab.guardianAngel?.virtue}), coro ${cab.angelicChoir}, arcanjo ${cab.rulingArchangel}, sephirah ${cab.sephirahName}: ${cab.spiritualGuidance}`,
-    ...['numerologia', 'astrologia', 'cabala', 'odu', 'buzios', 'guardia'].map((k) => soOsDados(c[k]?.resumoParaMariaPadilha)),
+    ...['numerologia', 'astrologia', 'cabala', 'odu', 'buzios'].map((k) => soOsDados(c[k]?.resumoParaCigano)),
   ].filter(Boolean).join('\n\n'));
 
   return { dados, itens, resumo: resumo.slice(0, 24000) };

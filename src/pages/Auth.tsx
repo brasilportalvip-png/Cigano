@@ -1,471 +1,147 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext.js';
 import { motion } from 'motion/react';
-import {
-  Mail,
-  Phone,
-  Lock,
-  User,
-  Calendar,
-  Clock,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  KeyRound
-} from 'lucide-react';
+import { Mail, Lock, AlertCircle, Eye, EyeOff, CheckCircle2, KeyRound } from 'lucide-react';
 
+/** Entrada da mesa do Cigano — só o dono tem conta. */
 export const Auth: React.FC = () => {
-  const { user, register, login, resetPassword, isAuthenticating } = useApp();
+  const { user, login, resetPassword, isAuthenticating } = useApp();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const tabParam = searchParams.get('tab') || 'login';
 
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>(
-    tabParam === 'register' ? 'register' : 'login'
-  );
-
-  // Registration fields
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [birthTime, setBirthTime] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Login fields
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [isResetting, setIsResetting] = useState(false);
+  const [senha, setSenha] = useState('');
+  const [verSenha, setVerSenha] = useState(false);
+  const [erro, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
+  const [modoRecuperar, setModoRecuperar] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      navigate('/chat');
-    }
+    if (user) navigate('/');
   }, [user, navigate]);
 
-  useEffect(() => {
-    setActiveTab(tabParam === 'register' ? 'register' : 'login');
-  }, [tabParam]);
-
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
+  const entrar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    if (password !== confirmPassword) {
-      setErrorMsg('As senhas não coincidem.');
+    setErro('');
+    setAviso('');
+    if (!email || !senha) {
+      setErro('Preencha o e-mail e a senha.');
       return;
     }
-
-    if (password.length < 8) {
-      setErrorMsg('A senha secreta deve ter no mínimo 8 caracteres.');
-      return;
-    }
-
-    if (phone.replace(/\D/g, '').length < 8) {
-      setErrorMsg('Por favor, informe um telefone válido com DDD.');
-      return;
-    }
-
     try {
-      await register({
-        fullName,
-        email: email.trim(),
-        phone: phone.trim(),
-        birthDate,
-        birthTime: birthTime || null,
-        password,
-      });
-
-      setSuccessMsg('Conta criada com sucesso! Redirecionando para o Reino...');
-      setTimeout(() => navigate('/chat'), 1000);
+      await login(email.trim(), senha);
+      navigate('/');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Falha ao criar cadastro espiritual.');
+      setErro(err?.message || 'Não consegui abrir a porta. Confira os dados.');
     }
   };
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
+  const recuperar = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    if (!loginEmail || !loginPassword) {
-      setErrorMsg('Por favor, preencha todos os campos obrigatórios.');
+    if (!email) {
+      setErro('Escreva o e-mail para eu mandar o link.');
       return;
     }
-
+    setEnviando(true);
+    setErro('');
     try {
-      await login(loginEmail.trim(), loginPassword);
-      navigate('/chat');
+      await resetPassword(email.trim());
+      setModoRecuperar(false);
+      setAviso('Mandei o link para trocar a senha. Olhe a sua caixa de entrada.');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Dados incorretos ou erro de autenticação.');
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resetEmail) return;
-    setIsResetting(true);
-    setErrorMsg('');
-    try {
-      await resetPassword(resetEmail.trim());
-      setShowResetModal(false);
-      setSuccessMsg('E-mail de redefinição de senha enviado com sucesso! Verifique sua caixa de entrada.');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Falha ao enviar e-mail de recuperação.');
+      setErro(err?.message || 'Não consegui mandar o link agora.');
     } finally {
-      setIsResetting(false);
+      setEnviando(false);
     }
   };
 
   return (
-    <div id="mp_auth_page" className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-8 text-white">
+    <div className="relative flex min-h-[calc(100vh-120px)] items-center justify-center px-4 py-10 text-white">
       <motion.div
-        id="mp_auth_card"
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
-        className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-[#D4AF37]/30 bg-black/85 p-6 md:p-8 backdrop-blur-md shadow-[0_0_35px_rgba(139,0,0,0.25)]"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[#D4AF37]/35 bg-black/80 p-6 md:p-8 backdrop-blur-md shadow-[0_0_40px_rgba(212,175,55,0.18)]"
       >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-[#D4AF37] to-red-650" />
-
-        <div className="mb-6 text-center flex flex-col items-center">
+        <div className="mb-6 flex flex-col items-center text-center">
           <img
-            src="/image/Maria Padilha Logo.png"
-            alt="Maria Padilha Rainha das 7 Encruzilhadas"
-            className="w-16 h-16 object-cover rounded-full border border-[#D4AF37]/50 shadow-[0_0_15px_rgba(212,175,55,0.3)] mb-2"
+            src="/image/cigano.webp"
+            alt="O Cigano"
+            className="h-40 w-32 rounded-xl border border-[#D4AF37]/50 object-cover object-top shadow-[0_0_25px_rgba(212,175,55,0.35)]"
           />
-          <h2 className="font-serif text-2xl font-bold tracking-wider text-[#D4AF37] mt-1">
-            Consagração de Acesso
-          </h2>
-          <p className="text-xs text-gray-400 font-sans">
-            Ambiente espiritual protegido. Seus dados natais permanecem sob sigilo.
-          </p>
+          <h1 className="mt-4 font-serif text-2xl font-bold tracking-wide text-[#D4AF37]">Eu sou o Cigano</h1>
+          <p className="mt-1 text-sm text-gray-300">Magia das Crenças — o Reino Encantado das Cartas</p>
+          <p className="mt-3 text-xs text-gray-400">Entre com a sua conta para abrir a mesa. Esta mesa é só do dono.</p>
         </div>
 
-        {errorMsg && (
-          <div id="auth_error_alert" className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-950/40 p-3 text-xs text-red-300">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-            <span>{errorMsg}</span>
+        {erro && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-950/40 p-3 text-xs text-red-300">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{erro}</span>
+          </div>
+        )}
+        {aviso && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-950/40 p-3 text-xs text-green-300">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>{aviso}</span>
           </div>
         )}
 
-        {successMsg && (
-          <div id="auth_success_alert" className="mb-4 flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-950/40 p-3 text-xs text-green-300">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-green-400" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        <div id="auth_tab_triggers" className="mb-6 flex border-b border-gray-800">
-          <button
-            id="tab_login_trigger"
-            type="button"
-            onClick={() => { setActiveTab('login'); setErrorMsg(''); setSuccessMsg(''); }}
-            className={`flex-1 pb-2.5 text-center text-sm font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-              activeTab === 'login'
-                ? 'border-b-2 border-[#D4AF37] text-[#D4AF37]'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Entrar
-          </button>
-
-          <button
-            id="tab_register_trigger"
-            type="button"
-            onClick={() => { setActiveTab('register'); setErrorMsg(''); setSuccessMsg(''); }}
-            className={`flex-1 pb-2.5 text-center text-sm font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-              activeTab === 'register'
-                ? 'border-b-2 border-[#D4AF37] text-[#D4AF37]'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Criar Conta
-          </button>
-        </div>
-
-        {activeTab === 'login' ? (
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="login_email_input" className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1">
-                E-mail Cadastrado
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                <input
-                  id="login_email_input"
-                  type="email"
-                  placeholder="seuemail@exemplo.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full rounded-md border border-gray-800 bg-gray-950 pl-10 pr-4 py-2 text-sm text-white focus:border-[#D4AF37] focus:outline-none"
-                  required
-                />
-              </div>
+        <form onSubmit={modoRecuperar ? recuperar : entrar} className="space-y-4">
+          <label className="block">
+            <span className="mb-1 block text-xs uppercase tracking-wider text-gray-400">E-mail</span>
+            <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-black/60 px-3 focus-within:border-[#D4AF37]">
+              <Mail className="h-4 w-4 text-[#D4AF37]" />
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-transparent py-2.5 text-sm outline-none"
+              />
             </div>
+          </label>
 
-            <div>
-              <label htmlFor="login_password_input" className="block text-xs font-semibold uppercase tracking-wider text-gray-300 mb-1">
-                Senha Secreta
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+          {!modoRecuperar && (
+            <label className="block">
+              <span className="mb-1 block text-xs uppercase tracking-wider text-gray-400">Senha</span>
+              <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-black/60 px-3 focus-within:border-[#D4AF37]">
+                <Lock className="h-4 w-4 text-[#D4AF37]" />
                 <input
-                  id="login_password_input"
-                  type={showLoginPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full rounded-md border border-gray-800 bg-gray-950 pl-10 pr-11 py-2 text-sm text-white focus:border-[#D4AF37] focus:outline-none"
-                  required
+                  type={verSenha ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  className="w-full bg-transparent py-2.5 text-sm outline-none"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowLoginPassword(!showLoginPassword)}
-                  className="absolute right-3 top-2 text-gray-400 hover:text-white cursor-pointer"
-                  aria-label={showLoginPassword ? 'Ocultar senha' : 'Ver senha'}
-                >
-                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <button type="button" onClick={() => setVerSenha((v) => !v)} className="text-gray-400 hover:text-white" aria-label="Mostrar senha">
+                  {verSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </div>
+            </label>
+          )}
 
-            <div className="flex items-center justify-end text-xs">
-              <button
-                id="btn_forgot_password"
-                type="button"
-                onClick={() => { setResetEmail(loginEmail); setShowResetModal(true); }}
-                className="text-[#D4AF37] hover:underline cursor-pointer"
-              >
-                Esqueceu a senha?
-              </button>
-            </div>
+          <button
+            type="submit"
+            disabled={isAuthenticating || enviando}
+            className="w-full rounded-lg bg-gradient-to-r from-[#b8860b] via-[#D4AF37] to-[#b8860b] py-3 text-sm font-bold uppercase tracking-wider text-black transition hover:brightness-110 disabled:opacity-60"
+          >
+            {modoRecuperar ? (enviando ? 'Enviando…' : 'Mandar link da senha') : isAuthenticating ? 'Abrindo a mesa…' : 'Abrir a mesa'}
+          </button>
+        </form>
 
-            <button
-              id="btn_login_submit"
-              type="submit"
-              disabled={isAuthenticating}
-              className="w-full rounded-md bg-gradient-to-r from-red-800 to-red-650 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:from-red-700 hover:to-red-600 transition-all cursor-pointer shadow-[0_0_15px_rgba(139,0,0,0.3)] disabled:opacity-50"
-            >
-              {isAuthenticating ? 'Entrando no Reino...' : 'Acessar o Reino'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleRegisterSubmit} className="space-y-3.5 max-h-[75dvh] sm:max-h-none overflow-y-auto sm:overflow-visible pr-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="reg_name_input" className="block text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5">
-                  Nome Completo de Solteiro
-                </label>
-                <div className="relative">
-                  <User className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-500" />
-                  <input
-                    id="reg_name_input"
-                    type="text"
-                    placeholder="Nome completo de solteiro"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full rounded-md border border-gray-800 bg-gray-950 pl-8 pr-3 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="reg_email_input" className="block text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5">
-                  E-mail
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-500" />
-                  <input
-                    id="reg_email_input"
-                    type="email"
-                    placeholder="exemplo@mail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-md border border-gray-800 bg-gray-950 pl-8 pr-3 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="reg_phone_input" className="block text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5">
-                  Telefone / WhatsApp
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-500" />
-                  <input
-                    id="reg_phone_input"
-                    type="tel"
-                    placeholder="(11) 99999-9999"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full rounded-md border border-gray-800 bg-gray-950 pl-8 pr-3 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="reg_birthdate_input" className="block text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5">
-                  Data de Nascimento Exata (Obrigatória)
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-500" />
-                  <input
-                    id="reg_birthdate_input"
-                    type="date"
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full rounded-md border border-gray-800 bg-gray-950 pl-8 pr-3 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="reg_birthtime_input" className="block text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5">
-                Hora de Nascimento
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-500" />
-                <input
-                  id="reg_birthtime_input"
-                  type="time"
-                  value={birthTime}
-                  onChange={(e) => setBirthTime(e.target.value)}
-                  className="w-full rounded-md border border-gray-800 bg-gray-950 pl-8 pr-3 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                />
-              </div>
-              <span className="text-[10px] text-gray-400 block mt-1">
-                Hora de nascimento — opcional, informe somente se souber.
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="reg_password_input" className="block text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5">
-                  Senha (mínimo 8 caracteres)
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-500" />
-                  <input
-                    id="reg_password_input"
-                    type={showRegisterPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-md border border-gray-800 bg-gray-950 pl-8 pr-10 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                    minLength={8}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                    className="absolute right-2.5 top-1.5 text-gray-400 hover:text-white cursor-pointer"
-                  >
-                    {showRegisterPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="reg_confirmpassword_input" className="block text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5">
-                  Confirmar Senha
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-500" />
-                  <input
-                    id="reg_confirmpassword_input"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-md border border-gray-800 bg-gray-950 pl-8 pr-10 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-2.5 top-1.5 text-gray-400 hover:text-white cursor-pointer"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button
-              id="btn_register_submit"
-              type="submit"
-              disabled={isAuthenticating}
-              className="w-full rounded-md bg-gradient-to-r from-red-800 to-red-650 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:from-red-700 hover:to-red-600 transition-all cursor-pointer shadow-[0_0_15px_rgba(139,0,0,0.3)] disabled:opacity-50"
-            >
-              {isAuthenticating ? 'Consagrando Cadastro...' : 'Consagrar Cadastro (Ganhe 07 Créditos)'}
-            </button>
-          </form>
-        )}
+        <button
+          type="button"
+          onClick={() => { setModoRecuperar((m) => !m); setErro(''); setAviso(''); }}
+          className="mx-auto mt-4 flex items-center gap-1 text-xs text-gray-400 hover:text-[#D4AF37]"
+        >
+          <KeyRound className="h-3.5 w-3.5" />
+          {modoRecuperar ? 'Voltar para entrar' : 'Esqueci a senha'}
+        </button>
       </motion.div>
-
-      {/* Password Reset Modal */}
-      {showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-[#D4AF37]/40 bg-zinc-950 p-6 shadow-2xl">
-            <div className="flex items-center gap-2 mb-3 text-[#D4AF37]">
-              <KeyRound className="w-5 h-5" />
-              <h3 className="font-serif text-base font-bold">Recuperação de Senha</h3>
-            </div>
-            <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-              Informe seu e-mail cadastrado para receber o link oficial de redefinição de senha enviado pelo Firebase.
-            </p>
-            <form onSubmit={handlePasswordReset} className="space-y-4">
-              <div>
-                <input
-                  type="email"
-                  placeholder="seuemail@exemplo.com"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  className="w-full rounded-md border border-zinc-800 bg-black px-3 py-2 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
-                  required
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowResetModal(false)}
-                  className="px-3 py-1.5 rounded-md border border-zinc-800 text-xs text-gray-300 hover:text-white cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isResetting}
-                  className="px-4 py-1.5 rounded-md bg-[#D4AF37] text-black font-bold text-xs hover:opacity-90 cursor-pointer disabled:opacity-50"
-                >
-                  {isResetting ? 'Enviando...' : 'Enviar Link'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
+export default Auth;

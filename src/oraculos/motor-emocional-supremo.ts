@@ -139,7 +139,7 @@ export function buildMotorEmocionalSupremo(input: MotorEmocionalInput) {
     orientacao: 'olhe para o que a pergunta esconde, não apenas para o que ela mostra.'
   };
 
-  const resumoParaMariaPadilha = `
+  const resumoParaCigano = `
 MOTOR EMOCIONAL SUPREMO
 
 Pergunta do consulente:
@@ -160,7 +160,7 @@ ${principal.sombra}
 Orientação:
 ${principal.orientacao}
 
-ORIENTAÇÃO PARA A VOZ DE MARIA PADILHA:
+ORIENTAÇÃO PARA A VOZ DO CIGANO:
 Use este motor para entender a pergunta escondida atrás da pergunta.
 Não fale como relatório técnico.
 Não diga que detectou padrão emocional.
@@ -179,7 +179,7 @@ Fale com verdade, mas sem humilhar o consulente.
       principal
     },
 
-    resumoParaMariaPadilha
+    resumoParaCigano
   };
 }
 

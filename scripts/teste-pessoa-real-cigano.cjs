@@ -23,10 +23,20 @@ const passo = (ok, texto) => { resultados.push(`${ok ? '✅ OK ' : '❌ ERRO'} $
   const erros = [];
   page.on('pageerror', (e) => erros.push(e.message));
   try {
+    try {
+      const h = await (await fetch(`${SITE}/api/health`)).json();
+      passo(Boolean(h.ia && h.ia.gemini), `IA do Cigano ligada na Vercel (GEMINI_API_KEY ${h.ia && h.ia.gemini ? 'encontrada' : 'FALTANDO'})`);
+      passo(Boolean(h.ia && h.ia.firebase), `Firebase ligado na Vercel (FIREBASE_SERVICE_ACCOUNT_BASE64 ${h.ia && h.ia.firebase ? 'encontrada' : 'FALTANDO'})`);
+    } catch { passo(false, 'não consegui ler /api/health'); }
     await page.goto(SITE, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForTimeout(2500);
+    const entrada = await page.locator('body').innerText();
+    passo(!/padilha/i.test(entrada), 'nenhuma menção a Maria Padilha na tela de entrada');
+    if (/Eu sou o Cigano/.test(entrada)) passo(true, 'tela de entrada do Cigano (retrato + "Eu sou o Cigano")');
     console.log('  >>> Entre com a sua conta de dono na janela que abriu (o teste espera até 3 minutos).');
     await page.getByTestId('cigano-home').waitFor({ timeout: 180000 });
     passo(true, 'entrou: tela do Cigano aberta (estilo ChatGPT)');
+    passo(!/padilha/i.test(await page.locator('body').innerText()), 'nenhuma menção a Maria Padilha na mesa');
     const rodape = (await page.getByTestId('cigano-rodape').innerText()).replace(/\s+/g, ' ');
     passo(/Termos/.test(rodape) && /Política/.test(rodape), `rodapé só com Termos e Política ("${rodape.trim()}")`);
 
@@ -37,7 +47,7 @@ const passo = (ok, texto) => { resultados.push(`${ok ? '✅ OK ' : '❌ ERRO'} $
     await page.getByTestId('form-natal-ok').click();
     await page.getByTestId('mapa-natal').waitFor({ timeout: 30000 });
     const mapa = await page.getByTestId('mapa-natal').innerText();
-    passo(/Signo solar/.test(mapa) && /Caminho de vida/.test(mapa) && /Anjo guardião/.test(mapa) && /Odù/.test(mapa), 'mapa natal em cima com astrologia, numerologia, cabala, odù, búzios e guardiã');
+    passo(/Signo solar/.test(mapa) && /Caminho de vida/.test(mapa) && /Anjo guardião/.test(mapa) && /Odù/.test(mapa), 'mapa natal em cima com astrologia, numerologia, cabala, odù e búzios');
 
     await page.getByTestId('cigano-abrir-mesa').click();
     await page.getByTestId('cigano-ritual').first().waitFor({ timeout: 30000 });

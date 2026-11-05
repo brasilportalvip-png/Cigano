@@ -11,8 +11,8 @@ describe('Numerology Deterministic Engine (Requisitos 30, 88)', () => {
   });
 
   it('deve calcular de forma estritamente determinística o Caminho de Vida e Expressão', () => {
-    const res1 = calculateNumerology('Maria Padilha', '15/05/1990');
-    const res2 = calculateNumerology('Maria Padilha', '15/05/1990');
+    const res1 = calculateNumerology('Cigano Encantado', '15/05/1990');
+    const res2 = calculateNumerology('Cigano Encantado', '15/05/1990');
 
     // Deterministic: Identical inputs MUST yield identical outputs
     expect(res1.lifePathNumber).toBe(res2.lifePathNumber);
