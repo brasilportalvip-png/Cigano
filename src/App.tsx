@@ -10,7 +10,7 @@ import { Cigano } from './pages/Cigano.js';
 import { Interpretacoes } from './pages/Interpretacoes.js';
 
 /**
- * Magia das Crenças — o Reino Encantado das Cartas.
+ * Magia do Tarot — o Reino Encantado das Cartas.
  * Ferramenta exclusiva do Cigano: tela inicial = mesa e conversa com o Cigano (estilo ChatGPT).
  */
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -30,7 +30,7 @@ function AppContent() {
         <header className="relative z-20 flex items-center gap-3 px-4 py-3 border-b border-[#D4AF37]/20 bg-black/70">
           <Link to="/" className="flex items-center gap-2">
             <img src="/image/cigano-avatar.webp" alt="" className="w-9 h-9 rounded-full object-cover border border-[#D4AF37]/60" />
-            <span className="font-serif text-sm text-[#D4AF37] font-bold">Magia das Crenças — o Reino Encantado das Cartas</span>
+            <span className="font-serif text-sm text-[#D4AF37] font-bold">Magia do Tarot — o Reino Encantado das Cartas</span>
           </Link>
         </header>
       )}

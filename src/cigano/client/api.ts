@@ -15,7 +15,7 @@ export class CiganoApiError extends Error {
   }
 }
 
-export interface ItemMapa { grupo: string; rotulo: string; valor: string; detalhe?: string }
+export interface ItemMapa { grupo: string; rotulo: string; valor: string; detalhe?: string; sombra?: string }
 export interface DadosNatais { fullName: string; birthDate: string; birthTime?: string | null }
 
 export interface ConsultaPublica {
@@ -77,7 +77,7 @@ export function parseSseChunk(buffer: string): { events: { event: string; data: 
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }
 
 export async function ciganoChat(
-  payload: { messages: ChatTurn[]; consultaId?: string | null; etapa: EtapaCigano },
+  payload: { messages: ChatTurn[]; consultaId?: string | null; etapa: EtapaCigano; dados?: DadosNatais | null },
   handlers: { onDelta: (t: string) => void; onDone: (r: { text: string; emotion: CiganoEmocao; actions: CiganoAcao[] }) => void },
   signal?: AbortSignal,
 ): Promise<void> {

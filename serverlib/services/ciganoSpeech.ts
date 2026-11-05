@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
 /**
- * Voz do Cigano (Magia das Crenças) — mesmo sistema de comunicação do Froc.IA (frocia2):
+ * Voz do Cigano (Magia do Tarot) — mesmo sistema de comunicação do Froc.IA (frocia2):
  *  - Fala: Gemini TTS em streaming (PCM 24 kHz), voz masculina "Charon", tom de amigo.
  *  - Escuta: token temporário do Gemini Live para transcrição em tempo real no navegador
  *    (a chave Gemini nunca sai do servidor).
@@ -23,15 +23,16 @@ export function cleanSpeechText(value: string): string {
     .slice(0, MAX_SPEECH_CHARACTERS);
 }
 
-/** Mesmo prompt de voz humanizada do Froc.IA (frocia2/server/ai/neuralSpeechService.ts). */
+/** Voz do Cigano: a mesma voz masculina do Froc.IA, com ritmo de cartomante — ágil e com tom certo. */
 export function buildFrocSpeechPrompt(text: string): string {
   const transcript = cleanSpeechText(text);
   if (!transcript) throw new Error('speech_text_empty');
   return [
     'Leia exatamente o conteúdo delimitado ao final, sem alterar a fala.',
-    'Fale em português brasileiro com voz masculina adulta, natural, calorosa e amigável.',
-    'Soa como um amigo próximo conversando com tranquilidade: educado, simpático, gentil e sempre disposto a ajudar.',
-    'Use ritmo humano, pausas naturais e entonação acolhedora, sem soar como robô ou locutor.',
+    'Fale em português brasileiro com voz masculina adulta, firme e envolvente: um cigano cartomante experiente atendendo.',
+    'Ritmo ágil e dinâmico, um pouco mais rápido que uma conversa calma. Pausas curtas: nada de silêncios longos entre as frases.',
+    'Varie o tom com o sentido: grave e firme nos alertas e perigos, intenso nas revelações, acolhedor nos conselhos, animado nas boas notícias.',
+    'Nunca soe como robô, locutor ou leitura arrastada.',
     `<fala>${transcript}</fala>`,
   ].join('\n');
 }

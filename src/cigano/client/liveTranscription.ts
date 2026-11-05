@@ -1,7 +1,7 @@
 import type { TokenGetter } from './api';
 
 /**
- * Escuta em tempo real do Cigano (Magia das Crenças) (portada do Froc.IA).
+ * Escuta em tempo real do Cigano (Magia do Tarot) (portada do Froc.IA).
  * Este módulo NÃO sintetiza voz e não altera o timbre/persona do Froc.
  * A fala continua sendo produzida pelo neuralSpeechService existente.
  */

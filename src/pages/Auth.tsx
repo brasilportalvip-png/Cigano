@@ -71,7 +71,7 @@ export const Auth: React.FC = () => {
             className="h-40 w-32 rounded-xl border border-[#D4AF37]/50 object-cover object-top shadow-[0_0_25px_rgba(212,175,55,0.35)]"
           />
           <h1 className="mt-4 font-serif text-2xl font-bold tracking-wide text-[#D4AF37]">Eu sou o Cigano</h1>
-          <p className="mt-1 text-sm text-gray-300">Magia das Crenças — o Reino Encantado das Cartas</p>
+          <p className="mt-1 text-sm text-gray-300">Magia do Tarot — o Reino Encantado das Cartas</p>
           <p className="mt-3 text-xs text-gray-400">Entre com a sua conta para abrir a mesa. Esta mesa é só do dono.</p>
         </div>
 

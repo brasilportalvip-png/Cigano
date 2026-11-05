@@ -6,6 +6,7 @@ import { buildConsultaSuprema, gerarComparacaoAmorosaSuprema } from '../oraculos
 import { calculateLoveSynastry } from '../oraculos/loveSynastryEngine.js';
 import { calculateAstrology } from '../oraculos/astrologyEngine.js';
 import { calculateCabala } from '../oraculos/cabalaEngine.js';
+import { interpretarNumero } from '../oraculos/numerologia-suprema.js';
 
 export interface DadosNatais {
   fullName: string;
@@ -15,12 +16,39 @@ export interface DadosNatais {
   birthTime?: string | null;
 }
 
+export type GrupoMapa = 'Essência' | 'Alma e caminho' | 'Amor e dinheiro' | 'Forças espirituais' | 'Momento atual' | 'Sorte e proteção';
+
 export interface ItemMapa {
-  grupo: 'Astrologia' | 'Numerologia' | 'Cabala' | 'Odù' | 'Búzios';
+  grupo: GrupoMapa;
   rotulo: string;
   valor: string;
+  /** O lado de luz / o significado. */
   detalhe?: string;
+  /** O lado de sombra (o que pede cuidado). */
+  sombra?: string;
 }
+
+const ELEMENTO: Record<string, string> = {
+  Fogo: 'Coragem, impulso e liderança; quando se fere, reage na hora e pode agir com pressa.',
+  Terra: 'Segurança, trabalho e lealdade; constrói devagar, mas pode travar por teimosia e medo de mudar.',
+  Ar: 'Mente rápida, comunicação e ideias; sofre com a cabeça cheia e com a indecisão.',
+  Água: 'Emoção profunda e intuição forte; sente tudo e costuma guardar mágoa.',
+};
+
+/** O que cada ano pessoal traz (numerologia). */
+export const ANO_PESSOAL: Record<number, string> = {
+  1: 'ano de começo: plantar, iniciar projetos, tomar a frente e decidir por conta própria.',
+  2: 'ano de parceria e paciência: acordos, amor, sensibilidade; nada de forçar.',
+  3: 'ano de expansão: comunicação, convites, vida social, criatividade e visibilidade.',
+  4: 'ano de trabalho e base: esforço, organização, dinheiro suado e estrutura.',
+  5: 'ano de mudança: viagens, novidades, liberdade, reviravoltas e riscos.',
+  6: 'ano de família e amor: casa, compromisso, responsabilidades e cobranças afetivas.',
+  7: 'ano de recolhimento: espiritualidade, estudo, verdades reveladas e solidão necessária.',
+  8: 'ano de colheita: dinheiro, poder, justiça, cobranças e conquistas materiais.',
+  9: 'ano de encerramento: fim de ciclos, limpeza, desapego e preparação para o novo.',
+  11: 'ano mestre de revelação: intuição forte, chamados espirituais e muita sensibilidade.',
+  22: 'ano mestre de construção: grandes obras, responsabilidade e conquista duradoura.',
+};
 
 export interface MapaNatal {
   dados: DadosNatais;
@@ -75,26 +103,69 @@ export function montarMapaNatal(dados: DadosNatais): MapaNatal {
   const buz = c.buzios?.buzios?.principal || {};
   const seph = c.cabala?.cabala?.sephirah || {};
 
+  const odu2 = c.odu?.odu?.complementar || {};
+  const oduS = c.odu?.odu?.sombra || {};
+  const buz2 = c.buzios?.buzios?.complementar || {};
+  const buzA = c.buzios?.buzios?.alerta || {};
+  const pit = num.pitagorica || {};
+  const cic = num.ciclos || {};
+  const hum = num.analiseHumana || {};
+  const fav = num.favoraveis || {};
+  const kar = num.karma || {};
+  const vistos = new Set<string>();
+  const orixas = [...(odu.orixas || []), ...(buz.orixas || [])].filter((o: string) => {
+    const k = String(o).normalize('NFD').replace(/[\u0300-\u036f\u1ec0-\u1eff]/g, '').replace(/[^a-z]/gi, '').toLowerCase();
+    if (!k || vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  }).slice(0, 6);
+  const numero = (rotulo: string, v: any, i?: any): ItemMapa => ({ grupo: 'Alma e caminho', rotulo, valor: n(v), detalhe: i?.luz ? `${i.luz} Missão: ${i.missao}` : undefined, sombra: i?.sombra });
+  const ciclo = (v: any, tipo: 'ano' | 'mês' | 'dia' = 'ano') => {
+    const k = Number(v);
+    const t = ANO_PESSOAL[k] || (k ? interpretarNumero(k).luz : '');
+    return tipo === 'ano' ? t : t.replace(/^ano/, tipo);
+  };
+  const anjo = typeof c.cabala?.cabala?.anjoGuardiao === 'string' ? c.cabala.cabala.anjoGuardiao.split(/[\n—:]/)[0].trim() : cab.guardianAngel?.name;
+
   const itens: ItemMapa[] = [
-    { grupo: 'Astrologia', rotulo: 'Signo solar', valor: n(astro.sunSign), detalhe: `${astro.element} · ${astro.modality}` },
-    { grupo: 'Astrologia', rotulo: 'Fase da Lua no nascimento', valor: n(astro.lunarPhase), detalhe: astro.lunarPhaseDescription },
-    { grupo: 'Astrologia', rotulo: 'Regente da hora', valor: astro.hourKnown ? n(astro.planetaryHourRuler) : 'hora não informada' },
-    { grupo: 'Numerologia', rotulo: 'Caminho de vida', valor: n(num.pitagorica?.caminhoVida), detalhe: it.caminhoVida?.missao },
-    { grupo: 'Numerologia', rotulo: 'Expressão', valor: n(num.pitagorica?.expressao), detalhe: it.expressao?.luz },
-    { grupo: 'Numerologia', rotulo: 'Alma', valor: n(num.pitagorica?.alma), detalhe: it.alma?.luz },
-    { grupo: 'Numerologia', rotulo: 'Personalidade', valor: n(num.pitagorica?.personalidade), detalhe: it.personalidade?.luz },
-    { grupo: 'Numerologia', rotulo: 'Destino', valor: n(num.pitagorica?.destino), detalhe: it.destino?.missao },
-    { grupo: 'Numerologia', rotulo: 'Ano pessoal', valor: n(num.ciclos?.anoPessoal) },
-    { grupo: 'Cabala', rotulo: 'Anjo guardião', valor: n(typeof c.cabala?.cabala?.anjoGuardiao === 'string' ? c.cabala.cabala.anjoGuardiao.split(/[\n—:]/)[0].trim() : cab.guardianAngel?.name), detalhe: `arcanjo ${n(cab.rulingArchangel)} · coro ${n(cab.angelicChoir)}` },
-    { grupo: 'Cabala', rotulo: 'Sephirah', valor: n(pick(seph, 'nome') ? `${seph.nome} (${seph.traducao})` : cab.sephirahName), detalhe: pick(seph, 'missao', 'luz') },
-    { grupo: 'Odù', rotulo: 'Odù de nascimento', valor: n(pick(odu, 'nome')), detalhe: pick(odu, 'significado') },
-    { grupo: 'Búzios', rotulo: 'Queda de nascimento', valor: n(pick(buz, 'nome') ? `${buz.queda ? `${buz.queda} — ` : ''}${buz.nome}` : ''), detalhe: pick(buz, 'significado') },
-  ];
+    { grupo: 'Essência', rotulo: 'Signo solar', valor: n(astro.sunSign), detalhe: `${astro.element} · ${astro.modality}. ${ELEMENTO[String(astro.element)] || ''}`.trim() },
+    { grupo: 'Essência', rotulo: 'Lua do nascimento', valor: n(astro.lunarPhase), detalhe: astro.lunarPhaseDescription },
+    { grupo: 'Essência', rotulo: 'Regente da hora', valor: astro.hourKnown ? n(astro.planetaryHourRuler) : 'hora não informada', detalhe: astro.hourKnown ? 'O planeta que governava a hora em que nasceu: marca o jeito de agir.' : undefined },
+    { grupo: 'Essência', rotulo: 'Personalidade', valor: n(pit.personalidade), detalhe: it.personalidade?.luz, sombra: it.personalidade?.sombra },
+    numero('Caminho de vida', pit.caminhoVida, it.caminhoVida),
+    numero('Expressão (talento)', pit.expressao, it.expressao),
+    numero('Alma (o que deseja por dentro)', pit.alma, it.alma),
+    numero('Destino', pit.destino, it.destino),
+    numero('Missão espiritual', c.numerologia?.cabalistico?.missaoEspiritual, it.missaoEspiritual),
+    numero('Tendência oculta', c.numerologia?.cabalistico?.tendenciaOculta, it.tendenciaOculta),
+    { grupo: 'Alma e caminho', rotulo: 'Lições kármicas', valor: (kar.licoesKarmicas || []).length ? kar.licoesKarmicas.join(', ') : 'nenhuma', detalhe: (kar.licoesKarmicas || []).length ? 'Números que faltam no nome: o que esta vida veio ensinar.' : 'O nome traz todas as vibrações.' },
+    { grupo: 'Amor e dinheiro', rotulo: 'No amor', valor: it.alma?.numero ? `alma ${it.alma.numero}` : '—', detalhe: hum.potencialAmoroso },
+    { grupo: 'Amor e dinheiro', rotulo: 'No dinheiro', valor: it.expressao?.numero ? `expressão ${it.expressao.numero}` : '—', detalhe: hum.potencialFinanceiro },
+    { grupo: 'Amor e dinheiro', rotulo: 'O que sabota', valor: 'autossabotagem', detalhe: hum.autoSabotagem },
+    { grupo: 'Forças espirituais', rotulo: 'Orixás que regem', valor: orixas.length ? orixas.join(', ') : '—', detalhe: 'As forças do odù e da queda de nascimento: é com elas que se pode contar.' },
+    { grupo: 'Forças espirituais', rotulo: 'Odù de nascimento', valor: n(pick(odu, 'nome')), detalhe: [pick(odu, 'significado'), odu.conselho ? `Conselho: ${odu.conselho}` : ''].filter(Boolean).join(' '), sombra: odu.sombra },
+    { grupo: 'Forças espirituais', rotulo: 'Odù que acompanha', valor: n(pick(odu2, 'nome')), detalhe: pick(odu2, 'significado'), sombra: odu2.alerta },
+    { grupo: 'Forças espirituais', rotulo: 'Odù de prova', valor: n(pick(oduS, 'nome')), detalhe: pick(oduS, 'significado'), sombra: oduS.alerta },
+    { grupo: 'Forças espirituais', rotulo: 'Queda dos búzios', valor: n(pick(buz, 'nome') ? `${buz.queda ? `${buz.queda} — ` : ''}${buz.nome}` : ''), detalhe: [pick(buz, 'significado'), buz.conselho ? `Conselho: ${buz.conselho}` : ''].filter(Boolean).join(' '), sombra: buz.sombra },
+    { grupo: 'Forças espirituais', rotulo: 'Búzios de alerta', valor: n(pick(buzA, 'nome') ? `${buzA.queda ? `${buzA.queda} — ` : ''}${buzA.nome}` : ''), detalhe: buzA.conselho, sombra: buzA.sombra || buz2.sombra },
+    { grupo: 'Forças espirituais', rotulo: 'Anjo guardião', valor: n(anjo), detalhe: 'O anjo que guarda o dia do nascimento: a proteção que caminha junto.' },
+    { grupo: 'Forças espirituais', rotulo: 'Sephirah', valor: n(pick(seph, 'nome') ? `${seph.nome} (${seph.traducao})` : cab.sephirahName), detalhe: pick(seph, 'luz', 'missao'), sombra: seph.sombra },
+    { grupo: 'Momento atual', rotulo: 'Ano pessoal', valor: n(cic.anoPessoal), detalhe: ciclo(cic.anoPessoal) },
+    { grupo: 'Momento atual', rotulo: 'Mês pessoal', valor: n(cic.mesPessoal), detalhe: ciclo(cic.mesPessoal, 'mês') },
+    { grupo: 'Momento atual', rotulo: 'Dia pessoal (hoje)', valor: n(cic.diaPessoal), detalhe: ciclo(cic.diaPessoal, 'dia') },
+    { grupo: 'Sorte e proteção', rotulo: 'Cor', valor: n(fav.cor), detalhe: buz.cores?.length ? `também: ${buz.cores.join(', ')}` : undefined },
+    { grupo: 'Sorte e proteção', rotulo: 'Dia de força', valor: n(fav.dia) },
+    { grupo: 'Sorte e proteção', rotulo: 'Número', valor: n(fav.numero) },
+    { grupo: 'Sorte e proteção', rotulo: 'Elemento', valor: n(fav.elemento) },
+  ].map((i) => ({ ...i, detalhe: i.detalhe ? String(i.detalhe).trim() : undefined, sombra: i.sombra ? String(i.sombra).trim() : undefined } as ItemMapa));
 
   const resumo = vozDoCigano([
     `DADOS NATAIS: ${dados.fullName} · nascimento ${dados.birthDate}${dados.birthTime ? ` às ${dados.birthTime}` : ' (hora não informada)'}`,
     `ASTROLOGIA: signo ${astro.sunSign}, elemento ${astro.element}, modalidade ${astro.modality}, Lua natal ${astro.lunarPhase} (${astro.lunarPhaseDescription})${astro.hourKnown ? `, regente da hora ${astro.planetaryHourRuler}` : ''}. Conselho cósmico: ${astro.cosmicAdvice}`,
     `CABALA (anjo e sephirah por data): anjo guardião ${cab.guardianAngel?.name} (${cab.guardianAngel?.virtue}), coro ${cab.angelicChoir}, arcanjo ${cab.rulingArchangel}, sephirah ${cab.sephirahName}: ${cab.spiritualGuidance}`,
+    `ORIXÁS QUE REGEM (odù e búzios de nascimento): ${orixas.join(', ') || '—'}`,
+    `MOMENTO ATUAL: ano pessoal ${cic.anoPessoal} (${ciclo(cic.anoPessoal)}), mês pessoal ${cic.mesPessoal} (${ciclo(cic.mesPessoal, 'mês')}), dia pessoal ${cic.diaPessoal} (${ciclo(cic.diaPessoal, 'dia')})`,
+    `AMOR: ${hum.potencialAmoroso || '—'} · DINHEIRO: ${hum.potencialFinanceiro || '—'} · AUTOSSABOTAGEM: ${hum.autoSabotagem || '—'}`,
     ...['numerologia', 'astrologia', 'cabala', 'odu', 'buzios'].map((k) => soOsDados(c[k]?.resumoParaCigano)),
   ].filter(Boolean).join('\n\n'));
 

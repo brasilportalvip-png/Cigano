@@ -1,6 +1,6 @@
 /**
  * O método do Cigano (puro, testável, usado no servidor e na tela).
- *  - Abertura: 7 cartas → 1-2-3 primeira resposta, 4-5-6 segunda resposta, 7 coringa de confirmação.
+ *  - Abertura: 3 montes de 7 cartas; cada monte → 1-2-3 primeira resposta, 4-5-6 segunda resposta, 7 coringa.
  *  - Cruz: embaralha de novo; 5 montes de 7 cartas, cada monte lido do mesmo jeito.
  *  - Perguntas (até 5): 7 cartas cada, mesmo jeito.
  * Toda tiragem usa um baralho de 78 cartas recém-embaralhado.
@@ -40,6 +40,13 @@ export const CRUZ_LAYOUT: Record<number, { linha: number; coluna: number }> = {
   2: { linha: 3, coluna: 2 },
 };
 
+/** Abertura: 3 montes de 7, lidos do mesmo jeito (3 + 3 + coringa). */
+export const ABERTURA_MONTES = [
+  { n: 1, nome: 'Primeiro monte', curto: '1º monte' },
+  { n: 2, nome: 'Segundo monte', curto: '2º monte' },
+  { n: 3, nome: 'Terceiro monte', curto: '3º monte' },
+] as const;
+
 export interface Grupo {
   titulo: string;
   cartas: number[]; // índices 0..6
@@ -58,9 +65,9 @@ export interface Tiragem {
   id: string;
   tipo: TipoTiragem;
   criadaEm: string;
-  /** abertura/pergunta: 7 cartas. */
+  /** pergunta: 7 cartas (consultas antigas: abertura com 7). */
   cartas?: CartaCigano[];
-  /** cruz: 5 montes de 7 (posição 1..5). */
+  /** abertura: 3 montes de 7 · cruz: 5 montes de 7 (posição 1..5). */
   montes?: Array<{ posicao: number; nome: string; cartas: CartaCigano[] }>;
   pergunta?: string;
   /** Pergunta que envolve outra pessoa: dados natais dela e comparação. */
@@ -77,6 +84,12 @@ export function tirarCartas(baralho: CartaCigano[], quantidade: number): CartaCi
 export function montarCruz(baralho: CartaCigano[]): Array<{ posicao: number; nome: string; cartas: CartaCigano[] }> {
   const cartas = tirarCartas(baralho, CARTAS_POR_JOGO * CRUZ_POSICOES.length);
   return CRUZ_POSICOES.map((p, i) => ({ posicao: p.n, nome: p.nome, cartas: cartas.slice(i * 7, i * 7 + 7) }));
+}
+
+/** Distribui 21 cartas em 3 montes de 7 (jogo de abertura). */
+export function montarAbertura(baralho: CartaCigano[]): Array<{ posicao: number; nome: string; cartas: CartaCigano[] }> {
+  const cartas = tirarCartas(baralho, CARTAS_POR_JOGO * ABERTURA_MONTES.length);
+  return ABERTURA_MONTES.map((p, i) => ({ posicao: p.n, nome: p.nome, cartas: cartas.slice(i * 7, i * 7 + 7) }));
 }
 
 /** Texto da carta para a interpretação (com a leitura pessoal do dono, se houver). */

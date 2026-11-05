@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * TESTE DE PESSOA REAL — Cigano (Magia das Crenças, o Reino Encantado das Cartas).
+ * TESTE DE PESSOA REAL — Cigano (Magia do Tarot, o Reino Encantado das Cartas).
  * Abre o navegador visível no site publicado. VOCÊ entra com a sua conta de dono
  * (o teste espera até 3 minutos) e depois o robô faz uma consulta completa como você faria:
- * dados natais → mapa → abrir a mesa (ritual + 7 cartas) → cruz (5 montes) → 1 pergunta.
+ * dados natais → retrato natal → abrir a mesa (ritual + 3 montes de 7) → cruz (5 montes) → 1 pergunta pronta → copiar.
  */
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -19,7 +19,7 @@ const passo = (ok, texto) => { resultados.push(`${ok ? '✅ OK ' : '❌ ERRO'} $
 (async () => {
   console.log(`\n  TESTE DE PESSOA REAL — Cigano — ${SITE}\n`);
   const browser = await chromium.launch({ headless: false, slowMo: 80 });
-  const page = await (await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', permissions: ['microphone'] })).newPage();
+  const page = await (await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', permissions: ['microphone', 'clipboard-read', 'clipboard-write'] })).newPage();
   const erros = [];
   page.on('pageerror', (e) => erros.push(e.message));
   try {
@@ -47,30 +47,47 @@ const passo = (ok, texto) => { resultados.push(`${ok ? '✅ OK ' : '❌ ERRO'} $
     await page.getByTestId('form-natal-ok').click();
     await page.getByTestId('mapa-natal').waitFor({ timeout: 30000 });
     const mapa = await page.getByTestId('mapa-natal').innerText();
-    passo(/Signo solar/.test(mapa) && /Caminho de vida/.test(mapa) && /Anjo guardião/.test(mapa) && /Odù/.test(mapa), 'mapa natal em cima com astrologia, numerologia, cabala, odù e búzios');
+    passo(/Signo solar/.test(mapa) && /Caminho de vida/.test(mapa) && /Anjo guardião/.test(mapa) && /Orixás que regem/i.test(mapa) && /Ano pessoal/i.test(mapa), 'retrato natal grande: essência, alma, amor e dinheiro, orixás, momento atual e sorte');
+    passo((await page.locator('[data-testid^="mapa-grupo-"]').count()) >= 6, 'retrato natal com os 6 assuntos');
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 1, null, { timeout: 120000 });
+    passo(true, 'o Cigano apresentou o retrato da pessoa antes de abrir a mesa');
+    passo(/MAGIA DO TAROT/.test(await page.locator('body').innerText()) && !/crenças/i.test(await page.locator('header').innerText()), 'nome certo: Magia do Tarot');
+    await page.getByTestId('cigano-audio').click();
+    passo(/desligado/i.test(await page.getByTestId('cigano-audio').innerText()), 'botão de áudio desliga');
+    await page.getByTestId('cigano-audio').click();
+    passo(/ligado/i.test(await page.getByTestId('cigano-audio').innerText()), 'botão de áudio liga de novo');
 
     await page.getByTestId('cigano-abrir-mesa').click();
     await page.getByTestId('cigano-ritual').first().waitFor({ timeout: 30000 });
     const ritual = await page.getByTestId('cigano-ritual').first().innerText();
     passo(/Salve a magia/.test(ritual) && /Pelo poder da tradição/.test(ritual) && (ritual.match(/Quem quer saber a verdade é Teste Pessoa Real da Silva/g) || []).length === 3, 'ritual: saudação, oração e o nome três vezes');
     await page.getByTestId('mesa-abertura').waitFor({ timeout: 240000 });
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="mesa-abertura"] [data-revelada="1"]').length === 7, null, { timeout: 30000 });
-    passo(true, 'jogo de abertura: 7 cartas viradas (1-2-3, 4-5-6 e coringa)');
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="cigano-resposta"]').length >= 1, null, { timeout: 240000 });
-    passo(true, 'o Cigano interpretou o jogo de abertura');
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="mesa-abertura"] [data-revelada="1"]').length === 21, null, { timeout: 30000 });
+    passo((await page.locator('[data-testid^="abertura-monte-"]').count()) === 3, 'jogo de abertura: 3 montes de 7 cartas viradas (1-2-3, 4-5-6 e coringa)');
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="cigano-resposta"]').length >= 4, null, { timeout: 400000 });
+    passo(true, 'o Cigano interpretou os 3 montes da abertura');
+    await page.getByTestId('copiar-bloco').nth(1).click();
+    const copiado = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+    passo(/MAGIA DO TAROT/.test(copiado) && /Teste Pessoa Real da Silva/.test(copiado) && /Cartas/.test(copiado), 'botão copiar: texto com marca, nome, cartas e a fala do Cigano');
 
     await page.getByTestId('cigano-fazer-cruz').waitFor({ timeout: 240000 });
     await page.getByTestId('cigano-fazer-cruz').click();
     await page.getByTestId('mesa-cruz').waitFor({ timeout: 240000 });
     passo((await page.locator('[data-testid^="monte-"]').count()) === 5, 'cruz: 5 montes de 7 cartas na posição da mesa');
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="cigano-resposta"]').length >= 7, null, { timeout: 600000 });
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="cigano-resposta"]').length >= 10, null, { timeout: 600000 });
     passo(true, 'o Cigano interpretou os 5 montes e fez a síntese');
 
-    await page.getByTestId('cigano-input').fill('Vou ter sucesso no trabalho este ano?');
-    await page.getByTestId('cigano-send').click();
+    await page.getByTestId('perguntas-prontas').waitFor({ timeout: 60000 });
+    passo((await page.getByTestId('pergunta-pronta').count()) >= 12, 'perguntas prontas aparecem depois da cruz');
+    await page.getByTestId('pergunta-pronta').first().click();
     await page.getByTestId('mesa-pergunta').waitFor({ timeout: 240000 });
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="cigano-resposta"]').length >= 8, null, { timeout: 300000 });
-    passo(true, 'pergunta 1 de 5: 7 cartas e resposta do Cigano');
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="cigano-resposta"]').length >= 11, null, { timeout: 300000 });
+    passo(true, 'pergunta 1 de 5 (pronta): 7 cartas e resposta do Cigano');
+    await page.getByTestId('copiar-consulta').click();
+    const tudo = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+    passo(/RETRATO NATAL/.test(tudo) && /PERGUNTA 1/.test(tudo), 'copiar consulta inteira');
+    const manifesto = await page.evaluate(async () => (await fetch('/manifest.webmanifest')).ok);
+    passo(manifesto, 'aplicativo instalável (manifest no ar)');
     await page.screenshot({ path: 'teste-pessoa-real-cigano.png', fullPage: false });
 
     const graves = erros.filter((e) => !/ResizeObserver|gtag|analytics/i.test(e));

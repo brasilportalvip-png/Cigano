@@ -33,7 +33,8 @@ export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, o
       type="button"
       onClick={onClick}
       className={`relative shrink-0 rounded-md transition-transform duration-500 ${revelada ? '' : 'hover:-translate-y-0.5'} ${coringa ? 'ring-2 ring-pink-500/80' : ''}`}
-      style={{ width: w, height: h, perspective: 600 }}
+      // No celular a carta pequena encolhe para as 7 caberem numa linha só.
+      style={tamanho !== 'lg' ? { width: `min(${w}px, calc((100vw - 92px) / 7.6))`, aspectRatio: '100 / 172', perspective: 600 } : { width: w, height: h, perspective: 600 }}
       aria-label={revelada && carta ? `${ordem ? `Carta ${ordem}: ` : ''}${nome}` : 'Carta virada'}
       data-testid="carta"
       data-revelada={revelada ? '1' : '0'}
@@ -64,7 +65,7 @@ export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, o
           </foreignObject>
         </svg>
       </span>
-      {ordem != null && <span className={`absolute -top-2 -left-2 w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center ${coringa ? 'bg-pink-500 text-white' : 'bg-[#d4a937] text-black'}`}>{ordem}</span>}
+      {ordem != null && <span className={`absolute -top-1.5 -left-1 sm:-top-2 sm:-left-2 w-4 h-4 sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-black flex items-center justify-center ${coringa ? 'bg-pink-500 text-white' : 'bg-[#d4a937] text-black'}`}>{ordem}</span>}
     </button>
   );
 }
