@@ -1,5 +1,5 @@
 /**
- * Canonical Date Normalizer - Reino de Maria Padilha
+ * Canonical Date Normalizer - Cigano — Magia das Crenças
  * 
  * Regra: Aceita estritamente YYYY-MM-DD e DD/MM/AAAA.
  * Rejeita datas fictícias ou impossíveis (ex: 31/02).

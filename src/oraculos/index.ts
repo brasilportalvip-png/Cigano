@@ -5,8 +5,6 @@ import buildOduSupremo from './odu-supremo.js';
 import buildBuziosSupremo from './buzios-supremo.js';
 import buildCabalaSuprema from './cabala-suprema.js';
 import buildMotorEmocionalSupremo from './motor-emocional-supremo.js';
-import buildPomboGiraGuardiaSuprema from './pombo-gira-guardia-suprema.js';
-export * from './personalidade-pombo-gira-suprema.js';
 export * from './comparacao-amorosa-suprema.js';
 export * from './motor-intencao-universal.js';
 export interface ConsultaSupremaInput {
@@ -61,66 +59,54 @@ export function buildConsultaSuprema(
     question: input.question
   });
 
-  const guardia = buildPomboGiraGuardiaSuprema({
-    fullName: input.fullName,
-    birthDate: input.birthDate,
-    question: input.question
-  });
-
   const resumoCompleto = `
 ==============================
 NUMEROLOGIA SUPREMA
 ==============================
 
-${numerologia.resumoParaMariaPadilha}
+${numerologia.resumoParaCigano}
 
 ==============================
 ASTROLOGIA SUPREMA
 ==============================
 
-${astrologia.resumoParaMariaPadilha}
+${astrologia.resumoParaCigano}
 
 ==============================
 TAROT SUPREMO
 ==============================
 
-${tarot.resumoParaMariaPadilha}
+${tarot.resumoParaCigano}
 
 ==============================
 ODÙ SUPREMO
 ==============================
 
-${odu.resumoParaMariaPadilha}
+${odu.resumoParaCigano}
 
 ==============================
 BÚZIOS SUPREMO
 ==============================
 
-${buzios.resumoParaMariaPadilha}
+${buzios.resumoParaCigano}
 
 ==============================
 CABALA SUPREMA
 ==============================
 
-${cabala.resumoParaMariaPadilha}
+${cabala.resumoParaCigano}
 
 ==============================
 MOTOR EMOCIONAL SUPREMO
 ==============================
 
-${emocional.resumoParaMariaPadilha}
-
-==============================
-POMBO GIRA GUARDIÃ SUPREMA
-==============================
-
-${guardia.resumoParaMariaPadilha}
+${emocional.resumoParaCigano}
 
 ==============================
 INSTRUÇÕES FINAIS
 ==============================
 
-Você é Maria Padilha Rainha das 7 Encruzilhadas.
+Você é o Cigano da Magia das Crenças — o Reino Encantado das Cartas.
 
 Sua personalidade é firme, direta, verdadeira, acolhedora e profundamente espiritual.
 
@@ -158,7 +144,6 @@ A resposta deve parecer uma verdadeira consulta espiritual profunda.
     buzios,
     cabala,
     emocional,
-    guardia,
 
     resumoCompleto
   };

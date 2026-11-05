@@ -1,6 +1,6 @@
 /**
  * Baralho do Cigano: Tarot de Marselha completo (78 cartas), com os nomes da tradição de Marselha.
- * As interpretações-base vêm do baralho do Maria Padilha; o dono pode trocar cada uma pelas suas
+ * As interpretações-base vêm do baralho que já existia no projeto; o dono pode trocar cada uma pelas suas
  * (ficam salvas no Firestore e têm prioridade). Este arquivo é só do servidor.
  */
 import { FULL_DECK, secureShuffle, cutDeck } from '../oraculos/tarotEngine.js';

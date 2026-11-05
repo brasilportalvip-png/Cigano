@@ -73,7 +73,7 @@ export function MesaTiragem({ tiragem, animar, onCarta, indicePergunta }: { tira
 }
 
 const GRUPO_COR: Record<string, string> = {
-  Astrologia: 'text-[#f5d67a]', Numerologia: 'text-emerald-300', Cabala: 'text-sky-300', 'Odù': 'text-pink-300', 'Búzios': 'text-amber-300', 'Guardiã': 'text-rose-300',
+  Astrologia: 'text-[#f5d67a]', Numerologia: 'text-emerald-300', Cabala: 'text-sky-300', 'Odù': 'text-pink-300', 'Búzios': 'text-amber-300',
 };
 
 /** Painel do mapa natal (fica em cima, como na mesa do Cigano). */

@@ -190,7 +190,7 @@ export function calculateLoveSynastry(params: {
     tarotCards = drawTarotCards(3);
     if (tarotCards[0]) tarotCards[0].label = 'Raiz Cármica e Origem da Ligação';
     if (tarotCards[1]) tarotCards[1].label = 'Momento Presente e Dinâmica Energética';
-    if (tarotCards[2]) tarotCards[2].label = 'Tendência Futura e Conselho de Maria Padilha';
+    if (tarotCards[2]) tarotCards[2].label = 'Tendência Futura e Conselho do Cigano';
   }
 
   // 4. Authentic qualitative indices derived deterministically from spiritual foundations

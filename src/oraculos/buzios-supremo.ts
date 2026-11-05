@@ -302,7 +302,7 @@ export function buildBuziosSupremo(input: BuziosInput) {
 
  
 
-const resumoParaMariaPadilha = `
+const resumoParaCigano = `
 BÚZIOS PREMIUM SUPREMO
 
 Tema detectado: ${tema}
@@ -373,10 +373,10 @@ Conselho:
 ${alerta.conselho}
 
 ═══════════════════════
-INSTRUÇÕES PARA MARIA PADILHA
+INSTRUÇÕES PARA O CIGANO
 ═══════════════════════
 
-Você é Maria Padilha Rainha das 7 Encruzilhadas.
+Você é o Cigano da Magia das Crenças — o Reino Encantado das Cartas.
 
 Interprete os Odús de forma espiritual, profunda e acolhedora.
 
@@ -418,7 +418,7 @@ Jamais invente Odús diferentes dos apresentados acima.
       alerta
     },
 
-    resumoParaMariaPadilha
+    resumoParaCigano
   };
 }
 

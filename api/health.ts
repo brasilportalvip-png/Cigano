@@ -13,7 +13,7 @@ export default function handler(req: Request, res: Response) {
       status: 'unready',
       liveness: true,
       readiness: false,
-      service: 'Reino de Maria Padilha',
+      service: 'Cigano — Magia das Crenças',
       timestamp: new Date().toISOString(),
     });
   }
@@ -22,8 +22,10 @@ export default function handler(req: Request, res: Response) {
     status: readiness ? 'online' : 'degraded',
     liveness: true,
     readiness,
-    service: 'Reino de Maria Padilha',
-    version: '2.0.0',
+    service: 'Cigano — Magia das Crenças',
+    version: '2.1.0',
+    // Só diz SE a chave existe — nunca o valor.
+    ia: { gemini: Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY), firebase: Boolean(isFirebaseAdminActive) },
     timestamp: new Date().toISOString(),
   });
 }

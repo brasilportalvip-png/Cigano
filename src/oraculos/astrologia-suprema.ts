@@ -32,7 +32,7 @@ export function buildAstrologiaSuprema(input: AstrologiaInput) {
   const astro = calculateAstrology(isoDate, input.birthTime || undefined);
   const tema = detectarTema(input.question || '');
 
-  const resumoParaMariaPadilha = `
+  const resumoParaCigano = `
 ASTROLOGIA CANÔNICA DE ORIENTAÇÃO ESPIRITUAL
 
 Signo Solar: ${astro.sunSign}
@@ -42,11 +42,11 @@ Vibração da Lua Natal: ${astro.lunarPhase} (${astro.lunarPhaseDescription})
 Hora Planetária Natal: ${astro.planetaryHourRuler ? astro.planetaryHourRuler : 'Não informada (hora de nascimento não informada)'}
 Tema Detectado da Consulta: ${tema}
 
-DIRETRIZ PARA A VOZ DE MARIA PADILHA:
+DIRETRIZ PARA A VOZ DO CIGANO:
 - Use a astrologia sagrada como bastidor sutil da leitura.
 - Não fale como relatório técnico frio ou lista mecânica.
 - Não invente ascendente ou casas astrológicas por ausência de dados locais.
-- Fale com verdade sagrada, acolhimento e a autoridade majestosa de Maria Padilha.
+- Fale com verdade sagrada, acolhimento e a autoridade serena do Cigano.
 `.trim();
 
   return {
@@ -65,7 +65,7 @@ DIRETRIZ PARA A VOZ DE MARIA PADILHA:
       conselhoCosmico: astro.cosmicAdvice,
     },
     tema,
-    resumoParaMariaPadilha,
+    resumoParaCigano,
   };
 }
 

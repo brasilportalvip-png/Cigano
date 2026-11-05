@@ -10,9 +10,9 @@ describe('Sitemap, Robots e Proteções de Produção (Requisitos 27, 28, 30)', 
 
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
     expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-    expect(xml).toContain('<loc>https://maria-padilha-rainha-das-7-encruzil.vercel.app/</loc>');
-    expect(xml).toContain('<loc>https://maria-padilha-rainha-das-7-encruzil.vercel.app/privacidade</loc>');
-    expect(xml).toContain('<loc>https://maria-padilha-rainha-das-7-encruzil.vercel.app/termos</loc>');
+    expect(xml).toContain('<loc>https://cigano-three.vercel.app/</loc>');
+    expect(xml).toContain('<loc>https://cigano-three.vercel.app/privacidade</loc>');
+    expect(xml).toContain('<loc>https://cigano-three.vercel.app/termos</loc>');
 
     // Rotas privadas NUNCA podem estar no sitemap
     expect(xml).not.toContain('/admin');
@@ -35,7 +35,7 @@ describe('Sitemap, Robots e Proteções de Produção (Requisitos 27, 28, 30)', 
     expect(robotsContent).toContain('Disallow: /chat');
     expect(robotsContent).toContain('Disallow: /credits');
     expect(robotsContent).toContain('Disallow: /dashboard');
-    expect(robotsContent).toContain('Sitemap: https://maria-padilha-rainha-das-7-encruzil.vercel.app/sitemap.xml');
+    expect(robotsContent).toContain('Sitemap: https://cigano-three.vercel.app/sitemap.xml');
   });
 
   it('rateLimiter deve suportar fail-closed para fluxos de alta sensibilidade', async () => {

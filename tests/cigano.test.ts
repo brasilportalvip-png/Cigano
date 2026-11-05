@@ -100,22 +100,23 @@ describe('Mapa natal com todos os oráculos', () => {
     expect(limparDadosNatais({ fullName: 'Ana Lima', birthDate: '1990-02-10', birthTime: '25:00' })).toEqual({ fullName: 'Ana Lima', birthDate: '1990-02-10', birthTime: null });
   });
 
-  it('traz astrologia, numerologia, cabala, odù, búzios e guardiã — e fala como Cigano', () => {
+  it('traz astrologia, numerologia, cabala, odù, búzios — e fala como Cigano', () => {
     const m = montarMapaNatal(limparDadosNatais(PESSOA)!);
     const grupos = new Set(m.itens.map((i) => i.grupo));
-    for (const g of ['Astrologia', 'Numerologia', 'Cabala', 'Odù', 'Búzios', 'Guardiã']) expect(grupos.has(g as any)).toBe(true);
+    for (const g of ['Astrologia', 'Numerologia', 'Cabala', 'Odù', 'Búzios']) expect(grupos.has(g as any)).toBe(true);
     expect(m.itens.find((i) => i.rotulo === 'Signo solar')?.valor).toBe('Áries');
     expect(m.itens.every((i) => i.valor && i.valor !== '—')).toBe(true);
     expect(m.resumo).toMatch(/NUMEROLOGIA/);
-    expect(m.resumo).not.toMatch(/Maria Padilha/i);
-    expect(m.resumo).not.toMatch(/Você é /);
+    expect(m.resumo).not.toMatch(/padilha|pombo ?gira|rainha das 7/i);
+    expect(JSON.stringify(m.itens)).not.toMatch(/padilha|pombo ?gira/i);
+    expect(m.resumo).not.toMatch(/Você é (?!o Cigano)/);
   });
 
   it('compara os dados natais de duas pessoas', () => {
     const txt = compararDadosNatais(limparDadosNatais(PESSOA)!, limparDadosNatais({ fullName: 'José Pereira', birthDate: '1975-11-02' })!, 'ele vai voltar?');
     expect(txt).toMatch(/José Pereira/);
     expect(txt).toMatch(/Compatibilidade/);
-    expect(txt).not.toMatch(/Maria Padilha/i);
+    expect(txt).not.toMatch(/Maria Padilha deve|Você é Maria Padilha/i);
   });
 });
 

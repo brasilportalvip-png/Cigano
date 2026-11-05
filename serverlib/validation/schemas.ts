@@ -9,7 +9,7 @@ export const ChatMessageSchema = z.object({
     role: z.enum(['user', 'model']),
     text: z.string().max(4000)
   })).max(20).optional().default([]),
-  pomboGiraName: z.string().max(100).optional().default('Maria Padilha Rainha das 7 Encruzilhadas'),
+  pomboGiraName: z.string().max(100).optional().default('Cigano'),
   idempotencyKey: z.string().max(100).optional(),
 });
 

@@ -39,8 +39,8 @@ function Avatar({ fase, level, size, onClick }: { fase: Fase; level: number; siz
       <span className={`absolute -inset-1.5 rounded-full border-2 ${fase === 'listening' ? 'animate-pulse' : ''} ${fase === 'thinking' ? 'border-dashed animate-spin [animation-duration:3s]' : ''}`} style={{ borderColor: cor, boxShadow: `0 0 24px -2px ${cor}` }} />
       <span className="absolute inset-0 rounded-full overflow-hidden bg-black">
         <img src="/image/cigano-avatar.webp" alt="" className="w-full h-full object-cover" draggable={false} />
-        <span className="absolute rounded-full pointer-events-none" style={{ left: '33%', top: '37%', width: '12%', height: '9%', background: `radial-gradient(circle, ${cor}, transparent 70%)`, opacity: olho, mixBlendMode: 'screen' }} />
-        <span className="absolute rounded-full pointer-events-none" style={{ left: '55%', top: '37%', width: '12%', height: '9%', background: `radial-gradient(circle, ${cor}, transparent 70%)`, opacity: olho, mixBlendMode: 'screen' }} />
+        <span className="absolute rounded-full pointer-events-none" style={{ left: '37%', top: '45%', width: '11%', height: '7%', background: `radial-gradient(circle, ${cor}, transparent 70%)`, opacity: olho, mixBlendMode: 'screen' }} />
+        <span className="absolute rounded-full pointer-events-none" style={{ left: '56%', top: '46%', width: '11%', height: '7%', background: `radial-gradient(circle, ${cor}, transparent 70%)`, opacity: olho, mixBlendMode: 'screen' }} />
       </span>
     </button>
   );
@@ -493,7 +493,7 @@ export function Cigano() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-6 text-center" data-testid="cigano-restrito">
         <div className="max-w-sm space-y-3">
-          <img src="/image/magia-das-crencas.webp" alt="Magia das Crenças" className="w-40 h-40 mx-auto rounded-2xl" />
+          <img src="/image/cigano.webp" alt="O Cigano" className="w-44 h-44 mx-auto rounded-full object-cover border-2 border-[#d4a937]/60" />
           <p className="text-white font-bold">Área exclusiva do Cigano.</p>
           <p className="text-slate-400 text-sm">Esta conta não tem acesso. Entre com a conta do dono.</p>
           <button onClick={() => logout?.()} className="text-sm text-[#d4a937] underline cursor-pointer">Sair e entrar com outra conta</button>
@@ -504,11 +504,16 @@ export function Cigano() {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col text-white bg-[#050304]" style={{ background: 'radial-gradient(ellipse at 50% -10%, rgba(212,169,55,.16), transparent 55%), radial-gradient(ellipse at 100% 100%, rgba(236,72,153,.10), transparent 45%), radial-gradient(ellipse at 0% 100%, rgba(34,197,94,.07), transparent 45%), #050304' }} data-testid="cigano-home">
-      <img src="/image/altar.webp" alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 w-full h-full object-cover opacity-[0.07]" />
+      {/* Fundo: a mesa cigana sob a lua (escurecido para ler bem) */}
+      <picture className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <source media="(max-width: 767px)" srcSet="/image/fundo-cigano-celular.webp" />
+        <img src="/image/fundo-cigano.webp" alt="" className="w-full h-full object-cover opacity-[0.32]" />
+      </picture>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/85" aria-hidden="true" />
       <header className="relative flex items-center gap-3 px-3 sm:px-5 py-3 border-b border-[#d4a937]/20">
         <button type="button" onClick={() => { setMenu(true); void carregarConsultas(); setChats(listChats(uid)); }} aria-label="Abrir menu" data-testid="cigano-menu-button" className="w-10 h-10 rounded-xl border border-[#d4a937]/50 text-[#f5d67a] flex items-center justify-center cursor-pointer"><Menu className="w-5 h-5" /></button>
         <div className="flex-1 min-w-0 flex items-center gap-2">
-          <img src="/image/magia-das-crencas.webp" alt="" className="w-8 h-8 rounded-md" />
+          <img src="/image/cigano-avatar.webp" alt="" className="w-9 h-9 rounded-full border border-[#d4a937]/60 object-cover" />
           <div className="min-w-0">
             <h1 className="font-black tracking-widest text-xs sm:text-sm truncate bg-gradient-to-r from-[#f5d67a] via-[#d4a937] to-[#fff3c4] bg-clip-text text-transparent">MAGIA DAS CRENÇAS</h1>
             <p className="text-[10px] text-slate-400 truncate">o Reino Encantado das Cartas</p>
