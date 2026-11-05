@@ -3,7 +3,7 @@
 Ferramenta exclusiva do Cigano, com todos os oráculos.
 
 - Tela inicial estilo ChatGPT: mapa natal em cima, mesa e conversa embaixo, voz e escuta em tempo real (mesmo sistema do Froc.IA).
-- Tarot de Marselha (78 cartas), embaralhamento criptográfico a cada jogo.
+- Tarô de Thoth (Crowley) (78 cartas), embaralhamento criptográfico a cada jogo.
 - Retrato natal completo (essência, alma e caminho, amor e dinheiro, orixás e forças espirituais, momento atual, sorte) + apresentação do Cigano antes das cartas.
 - Abertura (3 montes de 7: 1-2-3, 4-5-6, coringa) → Cruz (5 montes de 7) → até 5 perguntas (7 cartas cada; perguntas prontas do nicho; amor/sociedade/outra pessoa comparam os dados natais).
 - Botão copiar em cada bloco e na consulta inteira (texto personalizado com nome, data e cartas, pronto para mandar).

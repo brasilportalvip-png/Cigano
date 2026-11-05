@@ -168,19 +168,28 @@ export function MapaNatalPainel({ nome, nascimento, hora, itens }: { nome: strin
   );
 }
 
-/** Detalhe de uma carta tocada. */
+/** Detalhe de uma carta tocada: a imagem grande e a tradução completa. */
 export function DetalheCarta({ carta, onClose }: { carta: CartaCigano; onClose: () => void }) {
+  const linha = (rotulo: string, texto: string | undefined, cor: string) => texto ? <p className="text-slate-200 leading-snug"><b className={cor}>{rotulo}:</b> {texto}</p> : null;
   return (
-    <div className="fixed inset-0 z-[90] bg-black/80 flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="max-w-sm w-full rounded-2xl border border-[#d4a937]/50 bg-[#0b0607] p-4 flex gap-4" onClick={(e) => e.stopPropagation()}>
-        <CartaVisual carta={carta} revelada tamanho="lg" />
-        <div className="min-w-0 text-sm space-y-1.5">
-          <p className="font-bold text-[#f5d67a]">{carta.romano ? `${carta.romano} — ` : ''}{carta.nome}</p>
-          {carta.minhaLeitura && <p className="text-pink-200"><b>Minha leitura:</b> {carta.minhaLeitura}</p>}
-          <p className="text-slate-200"><b className="text-emerald-300">Luz:</b> {carta.luz}</p>
-          {carta.sombra && <p className="text-slate-300"><b className="text-pink-300">Sombra:</b> {carta.sombra}</p>}
-          <p className="text-slate-300"><b className="text-[#f5d67a]">Conselho:</b> {carta.conselho}</p>
-          <button type="button" onClick={onClose} className="mt-2 text-xs text-slate-400 underline cursor-pointer">fechar</button>
+    <div className="fixed inset-0 z-[90] bg-black/85 flex items-center justify-center p-3 sm:p-4" onClick={onClose} role="dialog" aria-modal="true" data-testid="detalhe-carta">
+      <div className="max-w-2xl w-full max-h-[92vh] overflow-y-auto rounded-2xl border border-[#d4a937]/50 bg-[#0b0607] p-4 sm:p-5 flex flex-col sm:flex-row gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="self-center sm:self-start shrink-0"><CartaVisual carta={carta} revelada tamanho="lg" /></div>
+        <div className="min-w-0 text-sm space-y-2">
+          <div>
+            <p className="text-lg font-black text-[#f5d67a] leading-tight">{carta.romano ? `${carta.romano} — ` : ''}{carta.nome}</p>
+            {carta.tradicional && <p className="text-xs text-slate-400">No tarô tradicional: {carta.tradicional}</p>}
+            {carta.entidade && <p className="text-xs text-sky-300 mt-0.5">Rege: {carta.entidade}</p>}
+          </div>
+          {carta.minhaLeitura && <p className="text-pink-200 leading-snug"><b>Minha leitura:</b> {carta.minhaLeitura}</p>}
+          {linha('Tradução', carta.traducao, 'text-[#f5d67a]')}
+          {linha('Significado', carta.significado, 'text-slate-300')}
+          {linha('Luz', carta.luz, 'text-emerald-300')}
+          {linha('Sombra', carta.sombra, 'text-pink-300')}
+          {linha('Ensinamento', carta.ensinamento, 'text-violet-300')}
+          {linha('Conselho', carta.conselho, 'text-[#f5d67a]')}
+          {linha('Alerta', carta.alerta, 'text-amber-300')}
+          <button type="button" onClick={onClose} className="mt-1 text-xs text-slate-400 underline cursor-pointer">fechar</button>
         </div>
       </div>
     </div>

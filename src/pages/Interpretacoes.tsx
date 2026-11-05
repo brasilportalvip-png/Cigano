@@ -49,7 +49,7 @@ export function Interpretacoes() {
         <button onClick={() => navigate('/')} aria-label="Voltar" className="w-10 h-10 rounded-xl border border-[#d4a937]/50 flex items-center justify-center cursor-pointer"><ArrowLeft className="w-4 h-4" /></button>
         <div className="flex-1">
           <h1 className="text-sm font-black tracking-widest text-[#f5d67a]">MINHAS INTERPRETAÇÕES</h1>
-          <p className="text-[11px] text-slate-400">Tarot de Marselha · 78 cartas · a sua leitura tem prioridade</p>
+          <p className="text-[11px] text-slate-400">Tarô de Thoth (Crowley) · 78 cartas · a sua leitura tem prioridade</p>
         </div>
       </header>
       <main className="max-w-3xl mx-auto p-3 sm:p-5 space-y-3">

@@ -20,12 +20,12 @@ interface Props {
   onClick?: () => void;
 }
 
-const LARGURA = { sm: 46, md: 78, lg: 110 };
+const LARGURA = { sm: 52, md: 84, lg: 180 };
 
 /** Carta do Tarot de Marselha (desenhada): verso escuro com ouro; frente com número romano, símbolo e nome. */
 export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, onClick }: Props) {
   const w = LARGURA[tamanho];
-  const h = Math.round(w * 1.72);
+  const h = Math.round(w * 1.5);
   const nome = carta?.nome || '';
   const titulo = carta?.arcano === 'maior' ? carta?.romano : carta ? (carta.numero === 1 ? 'ÁS' : carta.numero <= 10 ? String(carta.numero) : '') : '';
   return (
@@ -34,7 +34,7 @@ export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, o
       onClick={onClick}
       className={`relative shrink-0 rounded-md transition-transform duration-500 ${revelada ? '' : 'hover:-translate-y-0.5'} ${coringa ? 'ring-2 ring-pink-500/80' : ''}`}
       // No celular a carta pequena encolhe para as 7 caberem numa linha só.
-      style={tamanho !== 'lg' ? { width: `min(${w}px, calc((100vw - 92px) / 7.6))`, aspectRatio: '100 / 172', perspective: 600 } : { width: w, height: h, perspective: 600 }}
+      style={tamanho !== 'lg' ? { width: `min(${w}px, calc((100vw - 92px) / 7.6))`, aspectRatio: '100 / 150', perspective: 600 } : { width: w, height: h, perspective: 600 }}
       aria-label={revelada && carta ? `${ordem ? `Carta ${ordem}: ` : ''}${nome}` : 'Carta virada'}
       data-testid="carta"
       data-revelada={revelada ? '1' : '0'}
@@ -42,7 +42,10 @@ export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, o
       <span className="absolute inset-0 transition-transform duration-700" style={{ transformStyle: 'preserve-3d', transform: revelada ? 'rotateY(180deg)' : 'none' }}>
         {/* verso (arte do Reino Encantado das Cartas) */}
         <img src="/image/verso-carta.webp" alt="" draggable={false} className="absolute inset-0 w-full h-full rounded-md object-cover border border-[#d4a937]/70" style={{ backfaceVisibility: 'hidden' }} />
-        {/* frente */}
+        {/* frente: a imagem da carta (Tarô de Thoth do dono) */}
+        {carta?.imagem ? (
+          <img src={carta.imagem} alt={nome} draggable={false} loading="lazy" className="absolute inset-0 w-full h-full rounded-md object-cover border border-[#d4a937]/60 bg-[#0b0607]" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }} />
+        ) : (
         <svg viewBox="0 0 100 172" className="absolute inset-0 w-full h-full rounded-md" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }} aria-hidden="true">
           <rect width="100" height="172" rx="6" fill="#f3e6c4" stroke="#4a1410" strokeWidth="2.5" />
           <rect x="6" y="6" width="88" height="160" rx="3" fill="none" stroke="#b8272d" strokeWidth="1.5" />
@@ -64,6 +67,7 @@ export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, o
             <div style={{ color: '#f3e6c4', fontSize: 9.5, lineHeight: '11px', fontFamily: 'Georgia, serif', textAlign: 'center', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '26px' }}>{nome}</div>
           </foreignObject>
         </svg>
+        )}
       </span>
       {ordem != null && <span className={`absolute -top-1.5 -left-1 sm:-top-2 sm:-left-2 w-4 h-4 sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-black flex items-center justify-center ${coringa ? 'bg-pink-500 text-white' : 'bg-[#d4a937] text-black'}`}>{ordem}</span>}
     </button>

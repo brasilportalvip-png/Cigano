@@ -15,7 +15,7 @@ vi.mock('../serverlib/services/geminiService.js', () => ({
 }));
 
 import handler from '../api/cigano.js';
-import { BARALHO_MARSELHA, embaralharMarselha, comInterpretacoesDoDono } from '../src/cigano/baralho.js';
+import { BARALHO_CIGANO, embaralharBaralho, comInterpretacoesDoDono } from '../src/cigano/baralho.js';
 import { montarAbertura, montarCruz, tirarCartas, descreverSete, CRUZ_POSICOES, CRUZ_LAYOUT, MAX_PERGUNTAS } from '../src/cigano/metodo.js';
 import { cartasDoMonte, textoDaConsulta, textoDoBloco, textoDoMapa, tituloDoBloco } from '../src/cigano/copiar.js';
 import { PERGUNTAS_PRONTAS } from '../src/cigano/perguntas.js';
@@ -49,35 +49,48 @@ const PESSOA = { fullName: 'Maria das Graças Souza', birthDate: '1979-03-21', b
 
 beforeEach(() => { gem.prompts.length = 0; });
 
-describe('Baralho de Marselha do Cigano', () => {
-  it('tem as 78 cartas, sem repetir, com os nomes de Marselha', () => {
-    expect(BARALHO_MARSELHA).toHaveLength(78);
-    expect(new Set(BARALHO_MARSELHA.map((c) => c.id)).size).toBe(78);
-    expect(BARALHO_MARSELHA.filter((c) => c.arcano === 'maior')).toHaveLength(22);
-    const nomes = BARALHO_MARSELHA.map((c) => c.nome);
-    expect(nomes).toContain('A Papisa');
-    expect(nomes).toContain('O Papa');
-    expect(nomes).toContain('Valete de Copas');
-    expect(nomes.some((n) => /Pajem|Hierofante|Sacerdotisa/.test(n))).toBe(false);
+describe('Baralho do Cigano: Tarô de Thoth (Crowley)', () => {
+  it('tem as 78 cartas com os nomes do Thoth, a imagem do dono e as traduções da Maria Padilha', () => {
+    expect(BARALHO_CIGANO).toHaveLength(78);
+    expect(new Set(BARALHO_CIGANO.map((c) => c.id)).size).toBe(78);
+    expect(BARALHO_CIGANO.filter((c) => c.arcano === 'maior')).toHaveLength(22);
+    const nomes = BARALHO_CIGANO.map((c) => c.nome);
+    for (const n of ['O Louco', 'Luxúria', 'Arte', 'Ajustamento', 'O Aeon', 'O Universo', 'Domínio (Dois de Paus)', 'Poder (Quatro de Discos)', 'Princesa de Copas', 'Cavaleiro de Espadas']) expect(nomes).toContain(n);
+    expect(nomes.some((n) => /Pajem|Valete/.test(n))).toBe(false);
+    expect(BARALHO_CIGANO.find((c) => c.nome === 'Luxúria')?.tradicional).toBe('A Força');
+    expect(BARALHO_CIGANO.find((c) => c.nome === 'Cavaleiro de Espadas')?.tradicional).toBe('Rei de Espadas');
+    expect(BARALHO_CIGANO.every((c) => /^\/cartas\/[a-z0-9_]+\.webp$/.test(c.imagem || ''))).toBe(true);
+    expect(BARALHO_CIGANO.every((c) => c.traducao && c.luz && c.sombra && c.conselho && c.alerta)).toBe(true);
+    expect(BARALHO_CIGANO.filter((c) => c.arcano === 'maior').every((c) => c.entidade)).toBe(true);
+  });
+
+  it('a carta 0 é O Louco, com a tradução completa', () => {
+    const louco = BARALHO_CIGANO.find((c) => c.numero === 0 && c.arcano === 'maior')!;
+    expect(louco.nome).toBe('O Louco');
+    expect(louco.romano).toBe('0');
+    expect(louco.significado).toMatch(/Aleph/);
+    expect(louco.significado).toMatch(/No amor/);
+    expect(louco.traducao!.length).toBeGreaterThan(150);
+    expect(louco.ensinamento).toMatch(/zero/);
   });
 
   it('embaralha de verdade: cada embaralhada sai diferente e sem repetir carta', () => {
-    const a = embaralharMarselha().map((c) => c.id).join(',');
-    const b = embaralharMarselha().map((c) => c.id).join(',');
+    const a = embaralharBaralho().map((c) => c.id).join(',');
+    const b = embaralharBaralho().map((c) => c.id).join(',');
     expect(a).not.toBe(b);
     expect(new Set(a.split(',')).size).toBe(78);
   });
 
   it('a leitura pessoal do dono tem prioridade', () => {
-    const [c] = comInterpretacoesDoDono([BARALHO_MARSELHA[0]], { [BARALHO_MARSELHA[0].id]: { minhaLeitura: 'Para mim o Louco é viagem.', luz: '' } });
+    const [c] = comInterpretacoesDoDono([BARALHO_CIGANO[0]], { [BARALHO_CIGANO[0].id]: { minhaLeitura: 'Para mim o Louco é viagem.', luz: '' } });
     expect(c.minhaLeitura).toBe('Para mim o Louco é viagem.');
-    expect(c.luz).toBe(BARALHO_MARSELHA[0].luz);
+    expect(c.luz).toBe(BARALHO_CIGANO[0].luz);
   });
 });
 
 describe('Método do Cigano', () => {
   it('7 cartas: 1-2-3, 4-5-6 e a 7ª coringa', () => {
-    const sete = tirarCartas(embaralharMarselha(), 7);
+    const sete = tirarCartas(embaralharBaralho(), 7);
     const txt = descreverSete(sete);
     expect(txt).toMatch(/CARTAS 1 · 2 · 3 — PRIMEIRA RESPOSTA/);
     expect(txt).toMatch(/CARTAS 4 · 5 · 6 — SEGUNDA RESPOSTA/);
@@ -85,7 +98,7 @@ describe('Método do Cigano', () => {
   });
 
   it('abertura: 3 montes de 7 (21 cartas sem repetir), cada um lido 3 + 3 + coringa', () => {
-    const montes = montarAbertura(embaralharMarselha());
+    const montes = montarAbertura(embaralharBaralho());
     expect(montes).toHaveLength(3);
     expect(montes.map((m) => m.posicao)).toEqual([1, 2, 3]);
     expect(montes.every((m) => m.cartas.length === 7)).toBe(true);
@@ -94,7 +107,7 @@ describe('Método do Cigano', () => {
   });
 
   it('cruz: 5 montes de 7, sem repetir carta, na posição certa da mesa', () => {
-    const montes = montarCruz(embaralharMarselha());
+    const montes = montarCruz(embaralharBaralho());
     expect(montes.map((m) => m.nome)).toEqual(['Realidade atual', 'Ameaça dos pés', 'Presente negativo', 'Futuro positivo', 'Ori — cabeça e pensamentos']);
     expect(montes.every((m) => m.cartas.length === 7)).toBe(true);
     expect(new Set(montes.flatMap((m) => m.cartas.map((c) => c.id))).size).toBe(35);
@@ -153,7 +166,8 @@ describe('Persona e comandos', () => {
   it('o Cigano conhece o método, a hora exata e o limite de 5 perguntas', () => {
     const p = promptDoCigano({ nowMs: Date.UTC(2026, 10, 5, 15, 0), nomeDono: 'Carlos', consulta: 'X', perguntasUsadas: 2, etapa: { tipo: 'monte', posicao: 3 } });
     expect(p).toMatch(/HOMEM/);
-    expect(p).toMatch(/Tarot de Marselha \(78 cartas\)/);
+    expect(p).toMatch(/Tarô de Thoth de Aleister Crowley \(78 cartas\)/);
+    expect(p).toMatch(/nunca vi nada tão certeiro/);
     expect(p).toMatch(/1-2-3 juntas/);
     expect(p).toMatch(/CORINGA/);
     expect(p).toMatch(/Já foram usadas 2 de 5/);
@@ -238,6 +252,8 @@ describe('/api/cigano (só o dono)', () => {
     const primeira = c.tiragens[0].montes[2].cartas[6].nome;
     expect(prompt).toContain(primeira);
     expect(prompt).toMatch(/MONTE 3 DA ABERTURA/);
+    expect(prompt).toMatch(/SIGNIFICADO DAS CARTAS QUE SAÍRAM \(Tarô de Thoth do Cigano\)/);
+    expect(prompt).toMatch(/Tradução: /);
     expect(prompt).toMatch(/MONTE 5 — ORI/);
     expect(prompt).toMatch(/COMPARAÇÃO DOS DADOS NATAIS/);
     expect(prompt).toMatch(/Já foram usadas 5 de 5/);
@@ -255,7 +271,7 @@ describe('/api/cigano (só o dono)', () => {
   });
 
   it('salva a interpretação do dono e usa nos próximos jogos', async () => {
-    const id = BARALHO_MARSELHA[1].id;
+    const id = BARALHO_CIGANO[1].id;
     const r = await call('cartas', { body: { id, luz: 'Começo de trabalho', sombra: 'Enganação', conselho: 'Use seus dons', minhaLeitura: 'O Mago é o próprio consulente agindo.' } });
     expect(r.status).toBe(200);
     const lista = await call('cartas');
@@ -272,7 +288,7 @@ describe('/api/cigano (só o dono)', () => {
 describe('Copiar para mandar à pessoa', () => {
   const dados = { fullName: 'Maria das Graças Souza', birthDate: '1979-03-21', birthTime: '06:15' };
   it('bloco com marca, nome, data, título, cartas e assinatura', () => {
-    const montes = montarAbertura(embaralharMarselha());
+    const montes = montarAbertura(embaralharBaralho());
     const tiragens: any = [{ id: 't1', tipo: 'abertura', criadaEm: '', montes }];
     const b = tituloDoBloco({ tipo: 'abertura', posicao: 2 }, tiragens);
     expect(b.titulo).toBe('Jogo de abertura — segundo monte');

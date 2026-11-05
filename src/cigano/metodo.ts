@@ -16,6 +16,18 @@ export interface CartaCigano {
   luz: string;
   sombra: string;
   conselho: string;
+  /** Nome na tradição (Marselha/Rider) quando o Thoth usa outro nome. */
+  tradicional?: string;
+  /** Imagem da carta (Tarô de Thoth do dono). */
+  imagem?: string;
+  /** Orixá/entidade que rege a carta (arcanos maiores). */
+  entidade?: string;
+  /** Tradução do dono (o que a carta diz da pessoa). */
+  traducao?: string;
+  /** Significado completo. */
+  significado?: string;
+  ensinamento?: string;
+  alerta?: string;
   /** Leitura pessoal do dono para esta carta (tem prioridade). */
   minhaLeitura?: string;
 }
@@ -96,15 +108,26 @@ export function montarAbertura(baralho: CartaCigano[]): Array<{ posicao: number;
 export function descreverCarta(c: CartaCigano, ordem?: number): string {
   const titulo = `${ordem != null ? `${ordem}. ` : ''}${c.romano ? `${c.romano} — ` : ''}${c.nome}`;
   return [
-    titulo,
+    `${titulo}${c.tradicional ? ` [tradicional: ${c.tradicional}]` : ''}${c.entidade ? ` — rege: ${c.entidade}` : ''}`,
     c.minhaLeitura ? `   LEITURA DO CIGANO (use esta primeiro): ${c.minhaLeitura}` : null,
+    c.traducao ? `   Tradução: ${c.traducao}` : null,
+    c.significado ? `   Significado: ${c.significado}` : null,
     `   Luz: ${c.luz}`,
     c.sombra ? `   Sombra: ${c.sombra}` : null,
     `   Conselho: ${c.conselho}`,
+    c.alerta ? `   Alerta: ${c.alerta}` : null,
   ].filter(Boolean).join('\n');
 }
 
 /** Sete cartas organizadas em 3 + 3 + coringa, prontas para a interpretação. */
-export function descreverSete(cartas: CartaCigano[]): string {
-  return GRUPOS_DE_SETE.map((g) => `${g.titulo.toUpperCase()}\n${g.cartas.map((i) => descreverCarta(cartas[i], i + 1)).join('\n')}`).join('\n\n');
+export function descreverSete(cartas: CartaCigano[], compacto = false): string {
+  const curta = (c: CartaCigano, i: number) => `${i + 1}. ${c.romano ? `${c.romano} — ` : ''}${c.nome}${c.entidade ? ` (rege: ${c.entidade})` : ''}`;
+  return GRUPOS_DE_SETE.map((g) => `${g.titulo.toUpperCase()}\n${g.cartas.map((i) => (compacto ? curta(cartas[i], i) : descreverCarta(cartas[i], i + 1))).join('\n')}`).join(compacto ? '\n' : '\n\n');
+}
+
+/** O significado de cada carta que saiu na mesa, uma vez só (economiza e não repete). */
+export function dicionarioDasCartas(cartas: CartaCigano[]): string {
+  const vistas = new Map<string, CartaCigano>();
+  for (const c of cartas) if (c && !vistas.has(c.id)) vistas.set(c.id, c);
+  return [...vistas.values()].map((c) => descreverCarta(c)).join('\n');
 }

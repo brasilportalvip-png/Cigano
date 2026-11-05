@@ -573,7 +573,7 @@ export function Cigano() {
               <Avatar fase={fase} level={level} size={150} onClick={avatarClick} />
               <div>
                 <p className="text-2xl sm:text-3xl font-black">{saud.replace(/^./, (x) => x.toUpperCase())}{nomeDono ? `, ${nomeDono}` : ''}. <span className="text-[#f5d67a]">A mesa está pronta.</span></p>
-                <p className="text-sm text-slate-400 mt-2">Tarot de Marselha · 78 cartas · retrato natal completo · todos os oráculos.</p>
+                <p className="text-sm text-slate-400 mt-2">Tarô de Thoth (Crowley) · 78 cartas · retrato natal completo · todos os oráculos.</p>
                 <p className="sm:hidden text-[11px] text-slate-500 font-mono mt-2">{relogio}</p>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
