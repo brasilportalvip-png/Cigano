@@ -5,7 +5,7 @@ import { firestore } from '../serverlib/_firebaseAdmin.js';
 import { checkRateLimit } from '../serverlib/services/rateLimiter.js';
 import { getGeminiClient, MODEL_CHAIN } from '../serverlib/services/geminiService.js';
 import { cleanSpeechText, createLiveTranscriptionToken, FROC_SPEECH_SAMPLE_RATE, synthesizeFrocSpeechStream } from '../serverlib/services/ciganoSpeech.js';
-import { BARALHO_MARSELHA, comInterpretacoesDoDono, embaralharMarselha } from '../src/cigano/baralho.js';
+import { BARALHO_CIGANO, comInterpretacoesDoDono, embaralharBaralho } from '../src/cigano/baralho.js';
 import { CARTAS_POR_JOGO, MAX_PERGUNTAS, montarAbertura, montarCruz, tirarCartas, type CartaCigano, type Tiragem } from '../src/cigano/metodo.js';
 import { compararDadosNatais, limparDadosNatais, montarMapaNatal } from '../src/cigano/natal.js';
 import { consultaParaTexto, perguntasUsadas, type ConsultaCigano } from '../src/cigano/consulta.js';
@@ -48,7 +48,7 @@ async function interpretacoesDoDono(): Promise<Record<string, Partial<CartaCigan
 }
 
 async function baralhoDoDono(): Promise<CartaCigano[]> {
-  return comInterpretacoesDoDono(embaralharMarselha(), await interpretacoesDoDono());
+  return comInterpretacoesDoDono(embaralharBaralho(), await interpretacoesDoDono());
 }
 
 function novaTiragem(tipo: Tiragem['tipo'], extra: Partial<Tiragem> = {}): Tiragem {
@@ -217,7 +217,7 @@ export default async function handler(req: AuthenticatedRequest, res: Response) 
       }
       if (o === 'cartas') {
         const doDono = await interpretacoesDoDono();
-        return res.json({ cartas: comInterpretacoesDoDono(BARALHO_MARSELHA, doDono), personalizadas: Object.keys(doDono).length });
+        return res.json({ cartas: comInterpretacoesDoDono(BARALHO_CIGANO, doDono), personalizadas: Object.keys(doDono).length });
       }
       return res.status(404).json({ error: 'Operação desconhecida.' });
     }
@@ -283,12 +283,12 @@ export default async function handler(req: AuthenticatedRequest, res: Response) 
       }
       case 'cartas': {
         const id = String(req.body?.id || '');
-        if (!BARALHO_MARSELHA.some((c) => c.id === id)) return res.status(400).json({ error: 'Carta inválida.' });
+        if (!BARALHO_CIGANO.some((c) => c.id === id)) return res.status(400).json({ error: 'Carta inválida.' });
         const campo = (v: any) => String(v ?? '').replace(/[<>]/g, '').trim().slice(0, 2000);
         const atual = await interpretacoesDoDono();
         atual[id] = { luz: campo(req.body?.luz), sombra: campo(req.body?.sombra), conselho: campo(req.body?.conselho), minhaLeitura: campo(req.body?.minhaLeitura) };
         await firestore.collection(CARTAS_DONO).doc('interpretacoes').set({ cartas: atual, atualizadaEm: new Date().toISOString() });
-        return res.json({ ok: true, carta: comInterpretacoesDoDono(BARALHO_MARSELHA.filter((c) => c.id === id), atual)[0] });
+        return res.json({ ok: true, carta: comInterpretacoesDoDono(BARALHO_CIGANO.filter((c) => c.id === id), atual)[0] });
       }
     }
     return res.status(404).json({ error: 'Operação desconhecida.' });

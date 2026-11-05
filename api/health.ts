@@ -23,7 +23,7 @@ export default function handler(req: Request, res: Response) {
     liveness: true,
     readiness,
     service: 'Cigano — Magia do Tarot',
-    version: '2.2.0',
+    version: '2.3.0',
     // Só diz SE a chave existe — nunca o valor.
     ia: { gemini: Boolean(process.env.GEMINI_API_KEY || process.env.API_KEY), firebase: Boolean(isFirebaseAdminActive) },
     timestamp: new Date().toISOString(),

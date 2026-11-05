@@ -10,7 +10,7 @@ export const TermsOfService: React.FC = () => (
       <div className="mt-6 space-y-5 text-sm leading-relaxed text-gray-200">
         <section>
           <h2 className="font-serif font-bold text-[#D4AF37]">1. O que é esta mesa</h2>
-          <p>Esta é a ferramenta pessoal do Cigano. Ela tira as cartas do Tarot de Marselha, monta a cruz e lê os dados natais de quem consulta. Só o dono do site tem conta e entra na mesa.</p>
+          <p>Esta é a ferramenta pessoal do Cigano. Ela tira as cartas do Tarô de Thoth (Crowley), monta a cruz e lê os dados natais de quem consulta. Só o dono do site tem conta e entra na mesa.</p>
         </section>
         <section>
           <h2 className="font-serif font-bold text-[#D4AF37]">2. Orientação espiritual</h2>

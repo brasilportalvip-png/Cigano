@@ -1,6 +1,6 @@
 {
   "name": "Magia do Tarot — o Reino Encantado das Cartas",
-  "description": "Mesa pessoal do Cigano: Tarot de Marselha, cruz de 5 montes, dados natais e voz do Cigano.",
+  "description": "Mesa pessoal do Cigano: Tarô de Thoth (Crowley), cruz de 5 montes, dados natais e voz do Cigano.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

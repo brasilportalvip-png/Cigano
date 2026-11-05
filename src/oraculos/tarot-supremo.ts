@@ -46,7 +46,7 @@ function calcularBaseNumerica(nome: string, data: string, pergunta: string): num
   return reduzirNumero(nomeValor + somaDigitos(data) + somaDigitos(pergunta));
 }
 
-const ARCANOS: any[] = [
+export const ARCANOS: any[] = [
  {
   id: "maior_00_louco",
   arcano: "maior",
