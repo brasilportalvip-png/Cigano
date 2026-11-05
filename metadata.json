@@ -1,6 +1,6 @@
 {
-  "name": "Magia do Tarot: O Reino Encantado das Cartas",
-  "description": "Portal místico para leituras sagradas de Tarot, interpretações do Oráculo com sabedoria ancestral, grimório completo dos 78 arcanos e diário de tiragens.",
+  "name": "Portal Maria Padilha Rainha das 7 Encruzilhadas",
+  "description": "Portal espiritual completo com consultas premium, oráculos, biblioteca esotérica e orientação da Rainha Maria Padilha e mais de 300 Pombo Giras.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
