@@ -46,6 +46,7 @@ export function tituloDoBloco(etapa: EtapaCigano | undefined, tiragens: Tiragem[
     const n = etapa.posicao || 0;
     const monte = abertura?.montes?.find((m) => m.posicao === n);
     if (monte) return { titulo: `Jogo de abertura — ${ABERTURA_MONTES[n - 1]?.nome.toLowerCase() || `monte ${n}`}`, cartas: cartasDoMonte(monte.cartas) };
+    if (abertura?.montes) return { titulo: 'Jogo de abertura — 3 montes', cartas: abertura.montes.map((m) => `${m.posicao}º monte\n${cartasDoMonte(m.cartas)}`).join('\n\n') };
     return { titulo: 'Jogo de abertura', cartas: abertura?.cartas ? cartasDoMonte(abertura.cartas) : '' };
   }
   if (etapa.tipo === 'monte') {
@@ -53,7 +54,7 @@ export function tituloDoBloco(etapa: EtapaCigano | undefined, tiragens: Tiragem[
     const nome = CRUZ_POSICOES.find((p) => p.n === etapa.posicao)?.nome || '';
     return { titulo: `Jogo da cruz — monte ${etapa.posicao}: ${nome}`, cartas: monte ? cartasDoMonte(monte.cartas) : '' };
   }
-  if (etapa.tipo === 'sintese_cruz') return { titulo: 'Jogo da cruz — o que as cartas confirmam', cartas: '' };
+  if (etapa.tipo === 'sintese_cruz') return { titulo: 'Jogo da cruz', cartas: (cruz?.montes || []).map((m) => `${m.posicao}. ${m.nome}\n${cartasDoMonte(m.cartas)}`).join('\n\n') };
   const t = perguntas[etapa.indice - 1];
   return { titulo: `Pergunta ${etapa.indice}${t?.pergunta ? `: “${t.pergunta}”` : ''}`, cartas: t?.cartas ? cartasDoMonte(t.cartas) : '' };
 }

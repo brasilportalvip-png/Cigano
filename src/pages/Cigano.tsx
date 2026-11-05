@@ -8,7 +8,7 @@ import { startFrocListener, mergeFinal, type FrocListener } from '../cigano/clie
 import { takeSentences } from '../cigano/client/text.js';
 import { listChats, saveChat, deleteChat, newChatId, formatChatDate, type SavedChat } from '../cigano/client/history.js';
 import { aberturaDaMesa, agoraBrasilia, chamadoDoNome, saudacaoDoHorario, type CiganoAcao, type CiganoEmocao, type EtapaCigano } from '../cigano/persona.js';
-import { ABERTURA_MONTES, CRUZ_POSICOES, MAX_PERGUNTAS, type CartaCigano, type Tiragem } from '../cigano/metodo.js';
+import { MAX_PERGUNTAS, type CartaCigano, type Tiragem } from '../cigano/metodo.js';
 import { detectarIntencao, envolveOutraPessoa, mandouParar, normalizar, pareceEco } from '../cigano/intents.js';
 import { BotaoCopiar, DetalheCarta, MapaNatalPainel, MesaTiragem } from '../components/cigano/Mesa.js';
 import { textoDaConsulta, textoDoBloco, tituloDoBloco } from '../cigano/copiar.js';
@@ -56,6 +56,25 @@ function Avatar({ fase, level, size, onClick }: { fase: Fase; level: number; siz
         <span className="absolute rounded-full pointer-events-none" style={{ left: '56%', top: '46%', width: '11%', height: '7%', background: `radial-gradient(circle, ${cor}, transparent 70%)`, opacity: olho, mixBlendMode: 'screen' }} />
       </span>
     </button>
+  );
+}
+
+const ROTULO_RE = /^([A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L} ]{1,32}):\s+/u;
+
+/** A fala do Cigano em parágrafos, com o rótulo ("Resumo:", "Conselho:"…) em destaque. */
+function TextoComRotulos({ texto }: { texto: string }) {
+  const pars = texto.split(/\n{2,}|\n(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L} ]{1,32}:\s)/u).map((p) => p.trim()).filter(Boolean);
+  return (
+    <div className="space-y-2.5">
+      {pars.map((p, i) => {
+        const m = p.match(ROTULO_RE);
+        return (
+          <p key={i}>
+            {m ? <><span className="block text-[11px] font-black uppercase tracking-[0.15em] text-[#f5d67a]">{m[1]}</span>{p.slice(m[0].length)}</> : p}
+          </p>
+        );
+      })}
+    </div>
   );
 }
 
@@ -284,10 +303,9 @@ export function Cigano() {
       const t = c.tiragens.find((x) => x.tipo === 'abertura')!;
       setMessages((p) => [...p, { id: mid(), role: 'assistant', text: '', tiragemId: t.id, animar: true }]);
       await new Promise((r) => setTimeout(r, 21 * 220 + 300));
-      for (const m of ABERTURA_MONTES) {
-        if (gen !== genRef.current) return;
-        await enviar(`[ABERTURA] Interprete o ${m.nome.toLowerCase()} (monte ${m.n} de 3).`, { hidden: true, etapa: { tipo: 'abertura', posicao: m.n } });
-      }
+      if (gen !== genRef.current) return;
+      // Uma leitura só, com os 3 montes juntos: o Cigano entende tudo antes de falar.
+      await enviar('[ABERTURA] Leia o jogo de abertura completo (os 3 montes).', { hidden: true, etapa: { tipo: 'abertura' } });
     } catch (e: any) {
       setErro(e?.message || 'Não foi possível abrir a mesa.');
     } finally {
@@ -313,13 +331,9 @@ export function Cigano() {
       if (gen !== genRef.current) return;
       setMessages((p) => [...p, { id: mid(), role: 'assistant', text: '', tiragemId: t.id, animar: true }]);
       await new Promise((r) => setTimeout(r, 35 * 140 + 300));
-      // O próximo monte já é interpretado enquanto o Cigano fala o anterior (sem espera parada).
-      for (const pos of CRUZ_POSICOES) {
-        if (gen !== genRef.current) return;
-        await enviar(`[CRUZ] Interprete o monte ${pos.n} — ${pos.nome}.`, { hidden: true, etapa: { tipo: 'monte', posicao: pos.n } });
-      }
       if (gen !== genRef.current) return;
-      await enviar('[CRUZ] Faça a síntese da cruz.', { hidden: true, etapa: { tipo: 'sintese_cruz' } });
+      // Uma leitura só, com os 5 montes juntos.
+      await enviar('[CRUZ] Leia a cruz completa (os 5 montes).', { hidden: true, etapa: { tipo: 'sintese_cruz' } });
       setModoPergunta(true);
     } catch (e: any) {
       setErro(e?.message || 'Não foi possível fazer a cruz.');
@@ -589,7 +603,10 @@ export function Cigano() {
             return (
               <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[92%] sm:max-w-[82%] rounded-2xl px-4 py-2.5 ${m.role === 'user' ? 'bg-pink-500/10 border border-pink-500/35' : m.ritual ? 'bg-[#2a0d0f]/70 border border-[#b8272d]/50 italic' : 'bg-[#d4a937]/[0.07] border border-[#d4a937]/30'}`}>
-                  <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-slate-100" data-testid={m.role === 'assistant' ? (m.ritual ? 'cigano-ritual' : 'cigano-resposta') : 'dono-msg'}>{m.text}{m.streaming && <span className="inline-block w-2 h-4 bg-[#d4a937] ml-1 animate-pulse align-middle" />}</p>
+                  <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-slate-100" data-testid={m.role === 'assistant' ? (m.ritual ? 'cigano-ritual' : 'cigano-resposta') : 'dono-msg'}>
+                    {m.role === 'assistant' && !m.ritual ? <TextoComRotulos texto={m.text} /> : m.text}
+                    {m.streaming && <span className="inline-block w-2 h-4 bg-[#d4a937] ml-1 animate-pulse align-middle" />}
+                  </div>
                   {!m.text && m.streaming && <Loader2 className="w-4 h-4 animate-spin text-[#d4a937]" />}
                   {m.role === 'assistant' && !m.ritual && !m.streaming && m.text && (
                     <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#d4a937]/15 pt-2">

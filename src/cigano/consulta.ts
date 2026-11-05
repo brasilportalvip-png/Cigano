@@ -43,7 +43,7 @@ export function consultaParaTexto(c: ConsultaCigano): string {
       partes.push(`PERGUNTA ${p}: "${t.pergunta}"${t.outraPessoa ? `\nOutra pessoa: ${t.outraPessoa.fullName}, nascida em ${t.outraPessoa.birthDate}${t.outraPessoa.birthTime ? ` às ${t.outraPessoa.birthTime}` : ''}` : ''}${cmp ? `\n${cmp}` : ''}\n${descreverSete(t.cartas, true)}`);
     }
   }
-  partes.push(`SIGNIFICADO DAS CARTAS QUE SAÍRAM (Tarô de Thoth do Cigano)\n${dicionarioDasCartas(todas)}`);
+  partes.push(`SIGNIFICADO DAS CARTAS QUE SAÍRAM\n${dicionarioDasCartas(todas)}`);
   return partes.join('\n\n').slice(0, 90000);
 }
 

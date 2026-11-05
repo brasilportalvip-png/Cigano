@@ -49,16 +49,17 @@ const PESSOA = { fullName: 'Maria das Graças Souza', birthDate: '1979-03-21', b
 
 beforeEach(() => { gem.prompts.length = 0; });
 
-describe('Baralho do Cigano: Tarô de Thoth (Crowley)', () => {
-  it('tem as 78 cartas com os nomes do Thoth, a imagem do dono e as traduções da Maria Padilha', () => {
+describe('Baralho do Cigano: imagens do dono e nomes tradicionais', () => {
+  it('tem as 78 cartas com os nomes que todo mundo conhece, a imagem do dono e as traduções da Maria Padilha', () => {
     expect(BARALHO_CIGANO).toHaveLength(78);
     expect(new Set(BARALHO_CIGANO.map((c) => c.id)).size).toBe(78);
     expect(BARALHO_CIGANO.filter((c) => c.arcano === 'maior')).toHaveLength(22);
     const nomes = BARALHO_CIGANO.map((c) => c.nome);
-    for (const n of ['O Louco', 'Luxúria', 'Arte', 'Ajustamento', 'O Aeon', 'O Universo', 'Domínio (Dois de Paus)', 'Poder (Quatro de Discos)', 'Princesa de Copas', 'Cavaleiro de Espadas']) expect(nomes).toContain(n);
-    expect(nomes.some((n) => /Pajem|Valete/.test(n))).toBe(false);
-    expect(BARALHO_CIGANO.find((c) => c.nome === 'Luxúria')?.tradicional).toBe('A Força');
-    expect(BARALHO_CIGANO.find((c) => c.nome === 'Cavaleiro de Espadas')?.tradicional).toBe('Rei de Espadas');
+    for (const n of ['O Louco', 'A Força', 'A Temperança', 'A Justiça', 'O Julgamento', 'O Mundo', 'Dois de Paus', 'Quatro de Ouros', 'Valete de Copas', 'Rei de Espadas']) expect(nomes).toContain(n);
+    // nada de nomes que confundem (Thoth)
+    expect(nomes.some((n) => /Discos|Princesa|Príncipe|Luxúria|Ajustamento|Aeon|Universo|Domínio|Pajem|\(/.test(n))).toBe(false);
+    expect(BARALHO_CIGANO.find((c) => c.nome === 'A Força')?.imagem).toBe('/cartas/m11.webp');
+    expect(BARALHO_CIGANO.find((c) => c.nome === 'Rei de Espadas')?.imagem).toBe('/cartas/e_14.webp');
     expect(BARALHO_CIGANO.every((c) => /^\/cartas\/[a-z0-9_]+\.webp$/.test(c.imagem || ''))).toBe(true);
     expect(BARALHO_CIGANO.every((c) => c.traducao && c.luz && c.sombra && c.conselho && c.alerta)).toBe(true);
     expect(BARALHO_CIGANO.filter((c) => c.arcano === 'maior').every((c) => c.entidade)).toBe(true);
@@ -68,7 +69,7 @@ describe('Baralho do Cigano: Tarô de Thoth (Crowley)', () => {
     const louco = BARALHO_CIGANO.find((c) => c.numero === 0 && c.arcano === 'maior')!;
     expect(louco.nome).toBe('O Louco');
     expect(louco.romano).toBe('0');
-    expect(louco.significado).toMatch(/Aleph/);
+    expect(louco.significado).toMatch(/carta zero/);
     expect(louco.significado).toMatch(/No amor/);
     expect(louco.traducao!.length).toBeGreaterThan(150);
     expect(louco.ensinamento).toMatch(/zero/);
@@ -166,7 +167,9 @@ describe('Persona e comandos', () => {
   it('o Cigano conhece o método, a hora exata e o limite de 5 perguntas', () => {
     const p = promptDoCigano({ nowMs: Date.UTC(2026, 10, 5, 15, 0), nomeDono: 'Carlos', consulta: 'X', perguntasUsadas: 2, etapa: { tipo: 'monte', posicao: 3 } });
     expect(p).toMatch(/HOMEM/);
-    expect(p).toMatch(/Tarô de Thoth de Aleister Crowley \(78 cartas\)/);
+    expect(p).toMatch(/tarô de 78 cartas/);
+    expect(p).toMatch(/Primeiro ENTENDA, depois FALE/);
+    expect(p).toMatch(/NÃO use termos técnicos/);
     expect(p).toMatch(/nunca vi nada tão certeiro/);
     expect(p).toMatch(/1-2-3 juntas/);
     expect(p).toMatch(/CORINGA/);
@@ -175,8 +178,10 @@ describe('Persona e comandos', () => {
     expect(p).toMatch(/3 montes de 7 cartas/);
     expect(p).toMatch(/dinâmico/);
     expect(p).toMatch(/AGRAVANTES/);
-    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'abertura', posicao: 2 } })).toMatch(/MONTE 2 DE 3 DO JOGO DE ABERTURA/);
-    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'apresentacao' } })).toMatch(/APRESENTAÇÃO — o retrato/);
+    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'abertura' } })).toMatch(/os 3 montes de 7 cartas juntos, numa resposta só[\s\S]+Resumo:[\s\S]+Conselho:/);
+    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'sintese_cruz' } })).toMatch(/os 5 montes juntos[\s\S]+Ameaça dos pés:[\s\S]+Sua proteção:/);
+    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'pergunta', indice: 1 } })).toMatch(/Resposta: \(direto/);
+    expect(promptDoCigano({ nowMs: 0, etapa: { tipo: 'apresentacao' } })).toMatch(/APRESENTAÇÃO — quem é a pessoa[\s\S]+Quem você é:[\s\S]+No amor:/);
     expect(buildFrocSpeechPrompt('Olá.')).toMatch(/Ritmo ágil e dinâmico/);
     expect(p).toMatch(/05 de novembro de 2026/);
     expect(p).toMatch(/pedir_dados_outra_pessoa/);
@@ -252,7 +257,7 @@ describe('/api/cigano (só o dono)', () => {
     const primeira = c.tiragens[0].montes[2].cartas[6].nome;
     expect(prompt).toContain(primeira);
     expect(prompt).toMatch(/MONTE 3 DA ABERTURA/);
-    expect(prompt).toMatch(/SIGNIFICADO DAS CARTAS QUE SAÍRAM \(Tarô de Thoth do Cigano\)/);
+    expect(prompt).toMatch(/SIGNIFICADO DAS CARTAS QUE SAÍRAM/);
     expect(prompt).toMatch(/Tradução: /);
     expect(prompt).toMatch(/MONTE 5 — ORI/);
     expect(prompt).toMatch(/COMPARAÇÃO DOS DADOS NATAIS/);
@@ -299,6 +304,9 @@ describe('Copiar para mandar à pessoa', () => {
     expect(txt).toContain('As cartas mostram caminho aberto.');
     expect(txt).toMatch(/— Cigano · Magia do Tarot/);
     expect(txt).not.toMatch(/crenças|padilha/i);
+    const todo = tituloDoBloco({ tipo: 'abertura' }, tiragens);
+    expect(todo.titulo).toBe('Jogo de abertura — 3 montes');
+    expect(todo.cartas).toMatch(/1º monte[\s\S]+2º monte[\s\S]+3º monte/);
   });
   it('retrato natal e consulta inteira', () => {
     const m = montarMapaNatal(limparDadosNatais(dados)!);
