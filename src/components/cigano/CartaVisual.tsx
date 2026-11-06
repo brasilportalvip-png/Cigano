@@ -16,35 +16,62 @@ interface Props {
   revelada: boolean;
   tamanho?: 'sm' | 'md' | 'lg';
   coringa?: boolean;
+  /** Só para leitores de tela: a carta não mostra mais número por cima da arte. */
   ordem?: number;
   onClick?: () => void;
+  /** Largura em CSS (a mesa calcula para as 7 caberem no celular). */
+  largura?: string;
+  /** Inclinação em graus (as cartas ficam em leque). */
+  inclinar?: number;
+  /** Margem à esquerda em CSS (cartas sobrepostas no leque). */
+  sobrepor?: string;
+  /** Atraso da chegada na mesa, em ms. */
+  atraso?: number;
 }
 
-const LARGURA = { sm: 52, md: 84, lg: 180 };
+const LARGURA = { sm: 64, md: 96, lg: 200 };
 
-/** Carta do Tarot de Marselha (desenhada): verso escuro com ouro; frente com número romano, símbolo e nome. */
-export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, onClick }: Props) {
+/**
+ * Carta do Tarô de Thoth: verso que respira; ao virar, clarão de luz, aura dourada e um reflexo
+ * passando pela arte. Sem número por cima — a carta já tem nome, naipe e símbolo.
+ */
+export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, onClick, largura, inclinar = 0, sobrepor, atraso = 0 }: Props) {
   const w = LARGURA[tamanho];
   const h = Math.round(w * 1.5);
   const nome = carta?.nome || '';
   const titulo = carta?.arcano === 'maior' ? carta?.romano : carta ? (carta.numero === 1 ? 'ÁS' : carta.numero <= 10 ? String(carta.numero) : '') : '';
+  // Clarão só no instante em que a carta vira.
+  const [clarao, setClarao] = React.useState(false);
+  const antes = React.useRef(revelada);
+  React.useEffect(() => {
+    if (revelada && !antes.current) {
+      setClarao(true);
+      const t = window.setTimeout(() => setClarao(false), 950);
+      antes.current = revelada;
+      return () => window.clearTimeout(t);
+    }
+    antes.current = revelada;
+    return undefined;
+  }, [revelada]);
+  const tamanhoCss = tamanho === 'lg'
+    ? { width: w, height: h }
+    : { width: largura || `min(${w}px, calc((100vw - 84px) / 5.8))`, aspectRatio: '100 / 150' };
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`relative shrink-0 rounded-md transition-transform duration-500 ${revelada ? '' : 'hover:-translate-y-0.5'} ${coringa ? 'ring-2 ring-pink-500/80' : ''}`}
-      // No celular a carta pequena encolhe para as 7 caberem numa linha só.
-      style={tamanho !== 'lg' ? { width: `min(${w}px, calc((100vw - 92px) / 7.6))`, aspectRatio: '100 / 150', perspective: 600 } : { width: w, height: h, perspective: 600 }}
-      aria-label={revelada && carta ? `${ordem ? `Carta ${ordem}: ` : ''}${nome}` : 'Carta virada'}
+      className={`cg-carta cg-carta-chega relative shrink-0 rounded-md ${revelada ? 'cg-revelada' : ''} ${clarao ? 'cg-clarao' : ''} ${coringa && revelada ? 'cg-coringa' : ''}`}
+      style={{ ...tamanhoCss, perspective: 700, transform: inclinar ? `rotate(${inclinar}deg)` : undefined, transformOrigin: '50% 110%', marginLeft: sobrepor, animationDelay: `${atraso}ms` }}
+      aria-label={revelada && carta ? `${ordem ? `Carta ${ordem}${coringa ? ' (coringa)' : ''}: ` : ''}${nome}` : 'Carta virada'}
       data-testid="carta"
       data-revelada={revelada ? '1' : '0'}
     >
       <span className="absolute inset-0 transition-transform duration-700" style={{ transformStyle: 'preserve-3d', transform: revelada ? 'rotateY(180deg)' : 'none' }}>
         {/* verso (arte do Reino Encantado das Cartas) */}
-        <img src="/image/verso-carta.webp" alt="" draggable={false} className="absolute inset-0 w-full h-full rounded-md object-cover border border-[#d4a937]/70" style={{ backfaceVisibility: 'hidden' }} />
+        <img src="/image/verso-carta.webp" alt="" draggable={false} className={`absolute inset-0 w-full h-full rounded-md object-cover border border-[#d4a937]/70 ${revelada ? '' : 'cg-verso'}`} style={{ backfaceVisibility: 'hidden' }} />
         {/* frente: a imagem da carta (Tarô de Thoth do dono) */}
         {carta?.imagem ? (
-          <img src={carta.imagem} alt={nome} draggable={false} loading="lazy" className="absolute inset-0 w-full h-full rounded-md object-cover border border-[#d4a937]/60 bg-[#0b0607]" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }} />
+          <img src={carta.imagem} alt={nome} draggable={false} decoding="async" className="absolute inset-0 w-full h-full rounded-md object-cover border border-[#f5d67a]/80 bg-[#0b0607]" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }} />
         ) : (
         <svg viewBox="0 0 100 172" className="absolute inset-0 w-full h-full rounded-md" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }} aria-hidden="true">
           <rect width="100" height="172" rx="6" fill="#f3e6c4" stroke="#4a1410" strokeWidth="2.5" />
@@ -69,7 +96,7 @@ export function CartaVisual({ carta, revelada, tamanho = 'md', coringa, ordem, o
         </svg>
         )}
       </span>
-      {ordem != null && <span className={`absolute -top-1.5 -left-1 sm:-top-2 sm:-left-2 w-4 h-4 sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-black flex items-center justify-center ${coringa ? 'bg-pink-500 text-white' : 'bg-[#d4a937] text-black'}`}>{ordem}</span>}
+      {revelada && <span className="cg-reflexo" aria-hidden="true" />}
     </button>
   );
 }

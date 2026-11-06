@@ -10,7 +10,7 @@ import { listChats, saveChat, deleteChat, newChatId, formatChatDate, type SavedC
 import { aberturaDaMesa, agoraBrasilia, chamadoDoNome, saudacaoDoHorario, type CiganoAcao, type CiganoEmocao, type EtapaCigano } from '../cigano/persona.js';
 import { MAX_PERGUNTAS, type CartaCigano, type Tiragem } from '../cigano/metodo.js';
 import { detectarIntencao, envolveOutraPessoa, mandouParar, normalizar, pareceEco } from '../cigano/intents.js';
-import { BotaoCopiar, DetalheCarta, MapaNatalPainel, MesaTiragem } from '../components/cigano/Mesa.js';
+import { BotaoCopiar, DetalheCarta, MapaNatalPainel, MesaTiragem, TextoComRotulos } from '../components/cigano/Mesa.js';
 import { textoDaConsulta, textoDoBloco, tituloDoBloco } from '../cigano/copiar.js';
 import { PERGUNTAS_PRONTAS } from '../cigano/perguntas.js';
 import { useInstalarApp } from '../cigano/client/instalar.js';
@@ -56,25 +56,6 @@ function Avatar({ fase, level, size, onClick }: { fase: Fase; level: number; siz
         <span className="absolute rounded-full pointer-events-none" style={{ left: '56%', top: '46%', width: '11%', height: '7%', background: `radial-gradient(circle, ${cor}, transparent 70%)`, opacity: olho, mixBlendMode: 'screen' }} />
       </span>
     </button>
-  );
-}
-
-const ROTULO_RE = /^([A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L} ]{1,32}):\s+/u;
-
-/** A fala do Cigano em parágrafos, com o rótulo ("Resumo:", "Conselho:"…) em destaque. */
-function TextoComRotulos({ texto }: { texto: string }) {
-  const pars = texto.split(/\n{2,}|\n(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L} ]{1,32}:\s)/u).map((p) => p.trim()).filter(Boolean);
-  return (
-    <div className="space-y-2.5">
-      {pars.map((p, i) => {
-        const m = p.match(ROTULO_RE);
-        return (
-          <p key={i}>
-            {m ? <><span className="block text-[11px] font-black uppercase tracking-[0.15em] text-[#f5d67a]">{m[1]}</span>{p.slice(m[0].length)}</> : p}
-          </p>
-        );
-      })}
-    </div>
   );
 }
 
@@ -523,7 +504,9 @@ export function Cigano() {
 
   const tiragemPorId = (id?: string): Tiragem | undefined => consulta?.tiragens.find((t) => t.id === id);
   const indicePergunta = (id?: string) => (consulta ? consulta.tiragens.filter((t) => t.tipo === 'pergunta').findIndex((t) => t.id === id) + 1 : 0);
-  const visiveis = messages.filter((m) => !m.hidden && (m.text || m.streaming || m.tiragemId));
+  // O retrato natal escrito pelo Cigano aparece DENTRO do painel do mapa, não solto na conversa.
+  const retratoMsg = [...messages].reverse().find((m) => m.role === 'assistant' && m.etapa?.tipo === 'apresentacao');
+  const visiveis = messages.filter((m) => !m.hidden && m !== retratoMsg && (m.text || m.streaming || m.tiragemId));
   const temAbertura = !!consulta?.tiragens.some((t) => t.tipo === 'abertura');
   const temCruz = !!consulta?.tiragens.some((t) => t.tipo === 'cruz');
   const saud = saudacaoDoHorario(Date.now());
@@ -563,7 +546,7 @@ export function Cigano() {
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <img src="/image/cigano-avatar.webp" alt="" className="hidden min-[420px]:block w-9 h-9 rounded-full border border-[#d4a937]/60 object-cover" />
           <div className="min-w-0">
-            <h1 className="font-black tracking-widest text-xs sm:text-sm truncate bg-gradient-to-r from-[#f5d67a] via-[#d4a937] to-[#fff3c4] bg-clip-text text-transparent">MAGIA DO TAROT</h1>
+            <h1 className="font-black tracking-[0.3em] text-xs sm:text-base truncate cg-ouro-vivo">MAGIA DO TAROT</h1>
             <p className="text-[10px] text-slate-400 truncate">o Reino Encantado das Cartas</p>
           </div>
         </div>
@@ -579,19 +562,19 @@ export function Cigano() {
 
       <main className="relative flex-1 min-h-0 w-full max-w-4xl mx-auto flex flex-col">
         <div ref={listaRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3" data-testid="cigano-conversa">
-          {consulta && <MapaNatalPainel nome={consulta.dados.fullName} nascimento={consulta.dados.birthDate} hora={consulta.dados.birthTime} itens={consulta.mapaItens} />}
-          {!consulta && preMapa && <MapaNatalPainel nome={preMapa.dados.fullName} nascimento={preMapa.dados.birthDate} hora={preMapa.dados.birthTime} itens={preMapa.itens} />}
+          {consulta && <MapaNatalPainel nome={consulta.dados.fullName} nascimento={consulta.dados.birthDate} hora={consulta.dados.birthTime} itens={consulta.mapaItens} retrato={retratoMsg?.text} lendo={retratoMsg ? !!retratoMsg.streaming : fase === 'thinking'} onPedirRetrato={() => void enviar(`[RETRATO NATAL] Apresente ${consulta.dados.fullName}.`, { hidden: true, etapa: { tipo: 'apresentacao' }, dados: consulta.dados })} />}
+          {!consulta && preMapa && <MapaNatalPainel nome={preMapa.dados.fullName} nascimento={preMapa.dados.birthDate} hora={preMapa.dados.birthTime} itens={preMapa.itens} retrato={retratoMsg?.text} lendo={retratoMsg ? !!retratoMsg.streaming : fase === 'thinking'} onPedirRetrato={() => void enviar(`[RETRATO NATAL] Apresente ${preMapa.dados.fullName}.`, { hidden: true, etapa: { tipo: 'apresentacao' }, dados: preMapa.dados })} />}
 
           {!visiveis.length && !formNatal && !preMapa && (
             <div className="flex flex-col items-center text-center gap-4 pt-6">
               <Avatar fase={fase} level={level} size={150} onClick={avatarClick} />
               <div>
-                <p className="text-2xl sm:text-3xl font-black">{saud.replace(/^./, (x) => x.toUpperCase())}{nomeDono ? `, ${nomeDono}` : ''}. <span className="text-[#f5d67a]">A mesa está pronta.</span></p>
+                <p className="text-2xl sm:text-3xl font-black">{saud.replace(/^./, (x) => x.toUpperCase())}{nomeDono ? `, ${nomeDono}` : ''}. <span className="cg-ouro-vivo">A mesa está pronta.</span></p>
                 <p className="text-sm text-slate-400 mt-2">Tarô de Thoth (Crowley) · 78 cartas · retrato natal completo · todos os oráculos.</p>
                 <p className="sm:hidden text-[11px] text-slate-500 font-mono mt-2">{relogio}</p>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
-                <button type="button" onClick={() => setFormNatal(true)} data-testid="cigano-nova-consulta" className="px-5 py-3 rounded-full bg-[#d4a937] text-black font-black text-sm cursor-pointer"><Sparkles className="w-4 h-4 inline mr-1" /> Nova consulta</button>
+                <button type="button" onClick={() => setFormNatal(true)} data-testid="cigano-nova-consulta" className="px-5 py-3 rounded-full bg-gradient-to-r from-[#b8892a] via-[#f5d67a] to-[#b8892a] text-black font-black text-sm cursor-pointer shadow-[0_0_28px_-4px_rgba(245,214,122,0.8)] hover:scale-105 transition-transform"><Sparkles className="w-4 h-4 inline mr-1" /> Nova consulta</button>
                 <button type="button" onClick={comecarVoz} className="px-5 py-3 rounded-full border border-[#d4a937]/50 text-sm cursor-pointer">{listening ? 'Ouvindo…' : 'Conversar com o Cigano'}</button>
               </div>
             </div>
@@ -602,7 +585,7 @@ export function Cigano() {
             if (m.tiragemId && t) return <div key={m.id} className="pt-1"><MesaTiragem tiragem={t} animar={!!m.animar} onCarta={setCarta} indicePergunta={indicePergunta(t.id)} /></div>;
             return (
               <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[92%] sm:max-w-[82%] rounded-2xl px-4 py-2.5 ${m.role === 'user' ? 'bg-pink-500/10 border border-pink-500/35' : m.ritual ? 'bg-[#2a0d0f]/70 border border-[#b8272d]/50 italic' : 'bg-[#d4a937]/[0.07] border border-[#d4a937]/30'}`}>
+                <div className={`cg-fala max-w-[92%] sm:max-w-[82%] rounded-2xl px-4 py-3 ${m.role === 'user' ? 'bg-pink-500/10 border border-pink-500/35' : m.ritual ? 'bg-[#2a0d0f]/75 border border-[#b8272d]/60 italic shadow-[0_0_30px_-10px_rgba(184,39,45,0.7)]' : 'cg-mesa'}`}>
                   <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-slate-100" data-testid={m.role === 'assistant' ? (m.ritual ? 'cigano-ritual' : 'cigano-resposta') : 'dono-msg'}>
                     {m.role === 'assistant' && !m.ritual ? <TextoComRotulos texto={m.text} /> : m.text}
                     {m.streaming && <span className="inline-block w-2 h-4 bg-[#d4a937] ml-1 animate-pulse align-middle" />}
