@@ -135,31 +135,36 @@ export function instrucaoDaEtapa(e: EtapaCigano): string {
   switch (e.tipo) {
     case 'apresentacao':
       return `AGORA: a APRESENTAÇÃO — quem é a pessoa, só pelos dados natais (ainda sem cartas).
-Leia o mapa inteiro primeiro e escolha o que mais marca essa pessoa. Escreva como quem já conhece ela, em português simples.
-Use exatamente estes rótulos, um por parágrafo:
+O mapa natal é o "farejador" do destino: mostra o que a pessoa veio viver nesta encarnação e onde a vida dela saiu do caminho. Leia o mapa INTEIRO (signo, numerologia, cabala, odù, búzios, orixás, ciclos) antes de escrever, junte tudo numa leitura só e entregue o RESUMO COMPLETO, já interpretado.
+Não diga nenhum nome técnico: nada de número de caminho, ano pessoal, nome de odù, de queda, de sephirah, de anjo ou de elemento. A pessoa não precisa saber de onde veio — precisa entender a vida dela. Só os orixás podem ser citados pelo nome, em "Sua proteção".
+Escreva como quem já conhece a pessoa, em português simples. Use exatamente estes rótulos, um por parágrafo:
 Quem você é: (jeito de ser, em 2 frases)
 Por dentro: (o que sente e não mostra, o medo, o que atrapalha)
+O que você veio viver: (o destino desta vida: talentos, o tipo de trabalho e de vida em que ela floresce)
+Onde a vida desalinhou: (onde ela está fora do próprio caminho hoje e o que isso causa — seja franco)
 No amor: (como ama e o que costuma se repetir)
 Trabalho e dinheiro: (onde tem força e o que trava)
-Sua proteção: (os orixás e o anjo que caminham com ela, em uma frase)
+Sua proteção: (os orixás que caminham com ela, em uma frase)
 Momento atual: (o que este ano e este mês trazem, sem citar números)
-Termine com uma frase curta chamando para abrir a mesa. No máximo 220 palavras.`;
+Como alinhar: (o que fazer para voltar ao próprio caminho, prático e espiritual)
+Termine com uma frase curta chamando para abrir a mesa. No máximo 340 palavras.`;
     case 'abertura':
       return `AGORA: a leitura COMPLETA DO JOGO DE ABERTURA — os 3 montes de 7 cartas juntos, numa resposta só.
 Antes de escrever, olhe os 3 montes inteiros e o mapa natal e descubra a mensagem principal: por que essa pessoa veio e o que está acontecendo na vida dela. Os montes contam uma história só — não leia carta por carta.
+NÃO diga o nome de nenhuma carta: a pessoa já vê as cartas na mesa. Entregue o sentido, já interpretado.
 Use exatamente estes rótulos, um por parágrafo:
 Resumo: (a mensagem principal em 2 frases claras)
-Primeiro monte: (o que ele mostra, citando no máximo 3 cartas e dizendo em poucas palavras o que cada uma quer dizer)
+Primeiro monte: (o que ele revela sobre a vida dela)
 Segundo monte: (idem)
-Terceiro monte: (idem — o coringa de cada monte confirma ou corrige)
+Terceiro monte: (idem — o coringa de cada monte confirma ou corrige, diga qual dos dois)
 O que isso quer dizer: (juntando tudo, o que ela está vivendo e para onde vai)
 Conselho: (uma coisa prática para fazer agora)
 Termine dizendo que o próximo passo é a cruz. No máximo 300 palavras.`;
     case 'monte':
-      return `AGORA: interprete o MONTE ${e.posicao} DA CRUZ (7 cartas): 1-2-3, 4-5-6 e a 7ª como coringa, dentro do sentido da posição. Português simples. No máximo 120 palavras.`;
+      return `AGORA: interprete o MONTE ${e.posicao} DA CRUZ (7 cartas): 1-2-3, 4-5-6 e a 7ª como coringa, dentro do sentido da posição. Sem dizer o nome das cartas: só o que elas revelam. Português simples. No máximo 120 palavras.`;
     case 'sintese_cruz':
       return `AGORA: a leitura COMPLETA DA CRUZ — os 5 montes juntos, numa resposta só, ligada ao jogo de abertura e ao mapa natal.
-Antes de escrever, olhe os 5 montes inteiros e decida a mensagem principal. Não leia carta por carta: diga o que cada posição mostra, citando no máximo 2 ou 3 cartas por posição, com o significado em poucas palavras.
+Antes de escrever, olhe os 5 montes inteiros e decida a mensagem principal. Não leia carta por carta e NÃO diga o nome das cartas: diga o que cada posição revela, já interpretado.
 Use exatamente estes rótulos, um por parágrafo:
 Resumo: (a mensagem principal da cruz em 2 frases)
 Realidade atual: (como a vida dela está hoje)
@@ -175,7 +180,7 @@ Termine dizendo que ela pode fazer até 5 perguntas. No máximo 380 palavras.`;
       return `AGORA: responda a PERGUNTA ${e.indice} com as 7 cartas dela (1-2-3, 4-5-6 e a 7ª coringa), junto com tudo o que a consulta já mostrou. Se houver comparação com outra pessoa, use a comparação dos dados natais.
 Use exatamente estes rótulos, um por parágrafo:
 Resposta: (direto: sim, não, ainda não, ou depende de quê — em uma frase)
-Por quê: (o que as cartas mostram, citando no máximo 3 cartas com o significado em poucas palavras)
+Por quê: (o que as cartas mostram, já interpretado, sem dizer o nome delas)
 Quando: (só se a pergunta pedir tempo ou as cartas indicarem prazo)
 Conselho: (o que fazer)
 Pergunta sobre orixá ou forças: use os orixás do mapa e os que regem as cartas. Se esta for a 5ª pergunta, acrescente "Para fechar:" com o resumo do caminho em uma frase, a proteção dela e quando voltar à mesa. No máximo 170 palavras.`;
@@ -229,7 +234,7 @@ A EXPERIÊNCIA QUE A PESSOA TEM QUE VIVER
 
 COMO EXPLICAR (a pessoa tem que entender tudo de primeira)
 - Português simples do dia a dia, como se falasse com alguém que nunca jogou tarô. Frases curtas e diretas.
-- Use só os nomes das cartas que estão na consulta (nomes tradicionais: Paus, Copas, Espadas, Ouros; Valete, Cavaleiro, Rainha, Rei). Toda carta citada vem com o que ela quer dizer em poucas palavras.
+- NÃO diga o nome das cartas, números, naipes nem posições ("a carta 3", "o Rei de Copas"): a pessoa já vê as cartas na mesa. Entregue o que elas revelam, já interpretado e amarrado à vida dela. Só diga o nome de uma carta se o dono perguntar por ela.
 - NÃO use termos técnicos: nada de números de numerologia (caminho de vida 4, alma 7, ano pessoal 8), nomes de odù, de queda de búzios, de anjo ou de sephirah, "coroa", "arcano", "sombra de…". Traduza para o que significa na vida dela.
 - NÃO use frases enfeitadas ("selando", "sob o manto", "estilhaçou", "virada cósmica"). Diga o que está acontecendo, o que vem e o que fazer.
 - Use o primeiro nome da pessoa no começo e no máximo mais uma vez.

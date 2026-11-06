@@ -46,11 +46,16 @@ const passo = (ok, texto) => { resultados.push(`${ok ? '✅ OK ' : '❌ ERRO'} $
     await page.getByTestId('form-natal-hora').fill('14:30');
     await page.getByTestId('form-natal-ok').click();
     await page.getByTestId('mapa-natal').waitFor({ timeout: 30000 });
-    const mapa = await page.getByTestId('mapa-natal').innerText();
-    passo(/Signo solar/.test(mapa) && /Caminho de vida/.test(mapa) && /Anjo guardião/.test(mapa) && /Orixás que regem/i.test(mapa) && /Ano pessoal/i.test(mapa), 'retrato natal grande: essência, alma, amor e dinheiro, orixás, momento atual e sorte');
-    passo((await page.locator('[data-testid^="mapa-grupo-"]').count()) >= 6, 'retrato natal com os 6 assuntos');
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 1, null, { timeout: 120000 });
-    passo(true, 'o Cigano apresentou o retrato da pessoa antes de abrir a mesa');
+    // O Cigano escreve o retrato dentro do painel, em português simples.
+    await page.waitForFunction(() => (document.querySelector('[data-testid="retrato-cigano"]')?.textContent || '').includes('Como alinhar'), null, { timeout: 120000 });
+    const retrato = await page.getByTestId('retrato-cigano').innerText();
+    passo(/Quem você é/i.test(retrato) && /O que você veio viver/i.test(retrato) && /Como alinhar/i.test(retrato), 'o Cigano apresentou o retrato: quem é, o que veio viver e como alinhar');
+    passo(!/Caminho de vida|Ano pessoal|Sephirah/i.test(retrato), 'retrato sem nomes técnicos');
+    // Os nomes técnicos ficam guardados para o tarólogo.
+    await page.getByTestId('mapa-tecnico-botao').click();
+    const mapa = await page.getByTestId('mapa-tecnico').innerText();
+    passo(/Signo solar/.test(mapa) && /Caminho de vida/.test(mapa) && /Anjo guardião/.test(mapa) && /Orixás que regem/i.test(mapa) && /Ano pessoal/i.test(mapa), 'mapa técnico completo guardado: essência, alma, amor e dinheiro, orixás, momento atual e sorte');
+    passo((await page.locator('[data-testid^="mapa-grupo-"]').count()) >= 6, 'mapa técnico com os 6 assuntos');
     passo(/MAGIA DO TAROT/.test(await page.locator('body').innerText()) && !/crenças/i.test(await page.locator('header').innerText()), 'nome certo: Magia do Tarot');
     await page.getByTestId('cigano-audio').click();
     passo(/desligado/i.test(await page.getByTestId('cigano-audio').innerText()), 'botão de áudio desliga');
@@ -64,12 +69,12 @@ const passo = (ok, texto) => { resultados.push(`${ok ? '✅ OK ' : '❌ ERRO'} $
     await page.getByTestId('mesa-abertura').waitFor({ timeout: 240000 });
     await page.waitForFunction(() => document.querySelectorAll('[data-testid="mesa-abertura"] [data-revelada="1"]').length === 21, null, { timeout: 30000 });
     passo((await page.locator('[data-testid^="abertura-monte-"]').count()) === 3, 'jogo de abertura: 3 montes de 7 cartas viradas (1-2-3, 4-5-6 e coringa)');
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 2, null, { timeout: 400000 });
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 1, null, { timeout: 400000 });
     passo(true, 'o Cigano leu a abertura inteira (os 3 montes) numa resposta só');
-    const leituraAbertura = await page.getByTestId('cigano-resposta').nth(1).innerText();
+    const leituraAbertura = await page.getByTestId('cigano-resposta').nth(0).innerText();
     passo(/Resumo/i.test(leituraAbertura) && /Conselho/i.test(leituraAbertura), 'abertura organizada: Resumo, os 3 montes, o que quer dizer e Conselho');
     passo(!/Discos|Princesa|Príncipe|Luxúria|Ajustamento|Aeon/.test(await page.locator('body').innerText()), 'nomes das cartas tradicionais (nada de Discos, Princesa, Luxúria…)');
-    await page.getByTestId('copiar-bloco').nth(1).click();
+    await page.getByTestId('copiar-bloco').nth(0).click();
     const copiado = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
     passo(/MAGIA DO TAROT/.test(copiado) && /Teste Pessoa Real da Silva/.test(copiado) && /Cartas/.test(copiado), 'botão copiar: texto com marca, nome, cartas e a fala do Cigano');
 
@@ -77,14 +82,14 @@ const passo = (ok, texto) => { resultados.push(`${ok ? '✅ OK ' : '❌ ERRO'} $
     await page.getByTestId('cigano-fazer-cruz').click();
     await page.getByTestId('mesa-cruz').waitFor({ timeout: 240000 });
     passo((await page.locator('[data-testid^="monte-"]').count()) === 5, 'cruz: 5 montes de 7 cartas na posição da mesa');
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 3, null, { timeout: 600000 });
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 2, null, { timeout: 600000 });
     passo(true, 'o Cigano leu a cruz inteira (os 5 montes) numa resposta só');
 
     await page.getByTestId('perguntas-prontas').waitFor({ timeout: 60000 });
     passo((await page.getByTestId('pergunta-pronta').count()) >= 12, 'perguntas prontas aparecem depois da cruz');
     await page.getByTestId('pergunta-pronta').first().click();
     await page.getByTestId('mesa-pergunta').waitFor({ timeout: 240000 });
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 4, null, { timeout: 300000 });
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="copiar-bloco"]').length >= 3, null, { timeout: 300000 });
     passo(true, 'pergunta 1 de 5 (pronta): 7 cartas e resposta do Cigano');
     await page.getByTestId('copiar-consulta').click();
     const tudo = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
